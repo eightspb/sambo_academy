@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ученики - Sambo Academy</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <!-- Header Component -->
+    <div id="app-header"></div>
+    
+    <!-- Navigation Component -->
+    <div id="app-nav"></div>
+    
+    <main class="container">
+        <h1 class="mb-2">Ученики</h1>
+        
+        <div class="card mb-2">
+            <label class="form-label mb-1">Выберите группу:</label>
+            <div id="groupChips" class="chips-container"></div>
+        </div>
+        
+        <div style="text-align: right;" class="mb-2">
+            <button class="btn btn-primary" onclick="openCreateStudentModal()">+ Добавить ученика</button>
+        </div>
+        
+        <div id="studentsList">
+            <div class="spinner"></div>
+        </div>
+    </main>
+    
+    <!-- Create Student Modal -->
+    <div id="createStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Добавить ученика</h2>
+                <button class="modal-close" onclick="modal.close('createStudentModal')">&times;</button>
+            </div>
+            <form id="createStudentForm">
+                <div class="form-group">
+                    <label class="form-label">ФИО</label>
+                    <input type="text" name="full_name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дата рождения</label>
+                    <input type="date" name="birth_date" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Телефон</label>
+                    <input type="tel" name="phone" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email (необязательно)</label>
+                    <input type="email" name="email" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Группа</label>
+                    <select name="group_id" id="groupSelect" class="form-select" required>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Тип абонемента</label>
+                    <select name="subscription_type" class="form-select" required>
+                        <option value="8_sessions">8 занятий</option>
+                        <option value="12_sessions">12 занятий</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Примечания</label>
+                    <textarea name="notes" class="form-textarea" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Edit Student Modal -->
+    <div id="editStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Редактировать ученика</h2>
+                <button class="modal-close" onclick="modal.close('editStudentModal')">&times;</button>
+            </div>
+            <form id="editStudentForm">
+                <input type="hidden" id="editStudentId" name="student_id">
+                <div class="form-group">
+                    <label class="form-label">ФИО</label>
+                    <input type="text" id="editFullName" name="full_name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дата рождения</label>
+                    <input type="date" id="editBirthDate" name="birth_date" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Телефон</label>
+                    <input type="tel" id="editPhone" name="phone" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email (необязательно)</label>
+                    <input type="email" id="editEmail" name="email" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Группа</label>
+                    <select id="editGroupId" name="group_id" class="form-select" required>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Тип абонемента</label>
+                    <select id="editSubscriptionType" name="subscription_type" class="form-select" required>
+                        <option value="8_sessions">8 занятий</option>
+                        <option value="12_sessions">12 занятий</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Статус</label>
+                    <select id="editIsActive" name="is_active" class="form-select" required>
+                        <option value="true">Активен</option>
+                        <option value="false">Неактивен</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Примечания</label>
+                    <textarea id="editNotes" name="notes" class="form-textarea" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </form>
+        </div>
+    </div>
+    <script src="/static/js/components.js"></script>
+    
+    <script src="/static/js/app.js"></script>
+    <script>
+        let students = [];
+        let groups = [];
+        
+        async function loadData() {
+            await auth.checkAuth();
+            
+            try {
+                const user = await api.get('/auth/me');
+                document.getElementById('userName').textContent = user.full_name;
+                
+                groups = await api.get('/groups');
+                populateGroupFilters();
+            } catch (error) {
+                ui.showError(error.message);
+            }
+        }
+        
+        let selectedGroupId = '';
+        
+        function populateGroupFilters() {
+            const groupChips = document.getElementById('groupChips');
+            const groupSelect = document.getElementById('groupSelect');
+            const editGroupSelect = document.getElementById('editGroupId');
+            
+            const groupOptions = groups.map(g => 
+                `<option value="${g.id}">${g.name}</option>`
+            ).join('');
+            
+            groupSelect.innerHTML = groupOptions;
+            if (editGroupSelect) {
+                editGroupSelect.innerHTML = groupOptions;
+            }
+            
+            // Create chips for groups
+            const allChip = document.createElement('div');
+            allChip.className = 'chip active';
+            allChip.textContent = 'Все группы';
+            allChip.onclick = () => selectGroup('');
+            groupChips.appendChild(allChip);
+            
+            groups.forEach(group => {
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.textContent = group.name;
+                chip.dataset.groupId = group.id;
+                chip.onclick = () => selectGroup(group.id);
+                groupChips.appendChild(chip);
+            });
+            
+            // Check URL parameters for filters
+            const urlParams = new URLSearchParams(window.location.search);
+            const groupIdFromUrl = urlParams.get('group');
+            
+            if (groupIdFromUrl) {
+                selectGroup(groupIdFromUrl);
+            } else {
+                // Загружаем всех учеников при первом открытии
+                loadStudents();
+            }
+        }
+        
+        function selectGroup(groupId) {
+            selectedGroupId = groupId;
+            
+            // Update chips UI
+            document.querySelectorAll('#groupChips .chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            
+            if (groupId) {
+                const activeChip = document.querySelector(`#groupChips .chip[data-group-id="${groupId}"]`);
+                if (activeChip) activeChip.classList.add('active');
+            } else {
+                document.querySelector('#groupChips .chip').classList.add('active');
+            }
+            
+            loadStudents();
+        }
+        
+        async function loadStudents() {
+            const groupId = selectedGroupId;
+            const isActive = 'true'; // Всегда показываем только активных
+            
+            // Update URL with current filters
+            const params = new URLSearchParams();
+            if (groupId) params.set('group', groupId);
+            
+            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.history.replaceState({}, '', newUrl);
+            
+            // Build API URL
+            let apiUrl = '/students?';
+            if (groupId) apiUrl += `group_id=${groupId}&`;
+            apiUrl += `is_active=${isActive}`;
+            
+            try {
+                students = await api.get(apiUrl);
+                renderStudents();
+            } catch (error) {
+                ui.showError(error.message);
+            }
+        }
+        
+        function renderStudents() {
+            const container = document.getElementById('studentsList');
+            
+            // Update page title if filtered by group
+            const groupId = selectedGroupId;
+            const pageTitle = document.querySelector('h1');
+            if (groupId && groups.length > 0) {
+                const selectedGroup = groups.find(g => g.id === groupId);
+                if (selectedGroup) {
+                    pageTitle.textContent = `Ученики - ${selectedGroup.name}`;
+                }
+            } else {
+                pageTitle.textContent = 'Ученики';
+            }
+            
+            if (students.length === 0) {
+                container.innerHTML = '<div class="card"><p class="text-secondary">Учеников не найдено</p></div>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="card" style="overflow-x: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">№</th>
+                                <th>ФИО</th>
+                                <th>Дата рождения</th>
+                                <th>Телефон</th>
+                                <th>Группа</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${students.map((student, index) => {
+                                const group = groups.find(g => g.id === student.group_id);
+                                return `
+                                    <tr>
+                                        <td style="text-align: center; font-weight: 500;">${index + 1}</td>
+                                        <td>${student.full_name}</td>
+                                        <td>${dateUtils.formatDate(student.birth_date)}</td>
+                                        <td>${student.phone}</td>
+                                        <td>${group ? group.name : '-'}</td>
+                                        <td>
+                                            <span class="badge ${student.is_active ? 'badge-success' : 'badge-danger'}">
+                                                ${student.is_active ? 'Активен' : 'Неактивен'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="flex gap-1">
+                                                <button class="btn btn-primary btn-sm" onclick="openEditStudentModal('${student.id}')">
+                                                    Редактировать
+                                                </button>
+                                                <button class="btn btn-danger btn-sm" onclick="deleteStudent('${student.id}')">
+                                                    Удалить
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        function openCreateStudentModal() {
+            modal.open('createStudentModal');
+        }
+        
+        function openEditStudentModal(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) {
+                ui.showError('Ученик не найден');
+                return;
+            }
+            
+            // Fill form fields
+            document.getElementById('editStudentId').value = student.id;
+            document.getElementById('editFullName').value = student.full_name;
+            document.getElementById('editBirthDate').value = student.birth_date;
+            document.getElementById('editPhone').value = student.phone;
+            document.getElementById('editEmail').value = student.email || '';
+            document.getElementById('editGroupId').value = student.group_id;
+            document.getElementById('editSubscriptionType').value = student.subscription_type || '8_sessions';
+            document.getElementById('editIsActive').value = student.is_active.toString();
+            document.getElementById('editNotes').value = student.notes || '';
+            
+            modal.open('editStudentModal');
+        }
+        
+        document.getElementById('createStudentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                full_name: formData.get('full_name'),
+                birth_date: formData.get('birth_date'),
+                phone: formData.get('phone'),
+                email: formData.get('email') || null,
+                group_id: formData.get('group_id'),
+                notes: formData.get('notes') || null
+            };
+            
+            try {
+                ui.showLoading();
+                await api.post('/students', data);
+                ui.hideLoading();
+                
+                modal.close('createStudentModal');
+                e.target.reset();
+                loadStudents();
+                ui.showSuccess('Ученик добавлен');
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        });
+        
+        document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const studentId = document.getElementById('editStudentId').value;
+            
+            const data = {
+                full_name: formData.get('full_name'),
+                birth_date: formData.get('birth_date'),
+                phone: formData.get('phone'),
+                email: formData.get('email') || null,
+                group_id: formData.get('group_id'),
+                is_active: formData.get('is_active') === 'true',
+                notes: formData.get('notes') || null
+            };
+            
+            try {
+                ui.showLoading();
+                await api.put(`/students/${studentId}`, data);
+                ui.hideLoading();
+                
+                modal.close('editStudentModal');
+                loadStudents();
+                ui.showSuccess('Данные ученика обновлены');
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        });
+        
+        async function deleteStudent(studentId) {
+            if (!ui.confirm('Вы уверены, что хотите удалить этого ученика?')) {
+                return;
+            }
+            
+            try {
+                ui.showLoading();
+                await api.delete(`/students/${studentId}`);
+                ui.hideLoading();
+                
+                loadStudents();
+                ui.showSuccess('Ученик удален');
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        }
+        
+        loadData();
+    </script>
+</body>
+</html>

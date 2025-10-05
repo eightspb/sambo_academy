@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Посещаемость - Sambo Academy</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">🥋 Sambo Academy</div>
+            <div class="user-info">
+                <span id="userName">Загрузка...</span>
+                <button class="btn btn-outline btn-sm" onclick="auth.logout()">Выход</button>
+            </div>
+        </div>
+    </header>
+    
+    <nav class="nav container">
+        <ul class="nav-list">
+            <li class="nav-item"><a href="/" class="nav-link">Главная</a></li>
+            <li class="nav-item"><a href="/groups" class="nav-link">Группы</a></li>
+            <li class="nav-item"><a href="/students" class="nav-link">Ученики</a></li>
+            <li class="nav-item"><a href="/attendance" class="nav-link">Посещаемость</a></li>
+            <li class="nav-item"><a href="/payments" class="nav-link">Платежи</a></li>
+            <li class="nav-item"><a href="/statistics" class="nav-link">Статистика</a></li>
+            <li class="nav-item"><a href="/tournaments" class="nav-link">Турниры</a></li>
+        </ul>
+    </nav>
+    
+    <main class="container">
+        <h1 class="mb-2">Отметить посещаемость</h1>
+        
+        <div class="card mb-2">
+            <div class="form-group">
+                <label class="form-label">Выберите группу</label>
+                <select id="groupSelect" class="form-select" onchange="loadGroupStudents()">
+                    <option value="">-- Выберите группу --</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Дата занятия</label>
+                <input type="datetime-local" id="sessionDate" class="form-input">
+            </div>
+        </div>
+        
+        <div id="studentsAttendance" class="hidden">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title" id="groupName">Список учеников</h2>
+                </div>
+                
+                <div id="studentsList"></div>
+                
+                <button class="btn btn-primary mt-2" onclick="saveAttendance()">
+                    Сохранить посещаемость
+                </button>
+            </div>
+        </div>
+    </main>
+    
+    <script src="/static/js/app.js"></script>
+    <script>
+        let groups = [];
+        let students = [];
+        let selectedGroup = null;
+        
+        async function loadData() {
+            await auth.checkAuth();
+            
+            try {
+                const user = await api.get('/auth/me');
+                document.getElementById('userName').textContent = user.full_name;
+                
+                groups = await api.get('/groups');
+                populateGroups();
+                
+                // Set default date to now
+                const now = new Date();
+                const localDatetime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+                    .toISOString().slice(0, 16);
+                document.getElementById('sessionDate').value = localDatetime;
+                
+                // Check if group is in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const groupId = urlParams.get('group');
+                if (groupId) {
+                    document.getElementById('groupSelect').value = groupId;
+                    loadGroupStudents();
+                }
+            } catch (error) {
+                ui.showError(error.message);
+            }
+        }
+        
+        function populateGroups() {
+            const select = document.getElementById('groupSelect');
+            select.innerHTML = '<option value="">-- Выберите группу --</option>' +
+                groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+        }
+        
+        async function loadGroupStudents() {
+            const groupId = document.getElementById('groupSelect').value;
+            
+            if (!groupId) {
+                document.getElementById('studentsAttendance').classList.add('hidden');
+                return;
+            }
+            
+            selectedGroup = groups.find(g => g.id === groupId);
+            
+            try {
+                students = await api.get(`/students?group_id=${groupId}&is_active=true`);
+                renderStudents();
+                document.getElementById('studentsAttendance').classList.remove('hidden');
+                document.getElementById('groupName').textContent = `${selectedGroup.name} - Список учеников`;
+            } catch (error) {
+                ui.showError(error.message);
+            }
+        }
+        
+        function renderStudents() {
+            const container = document.getElementById('studentsList');
+            
+            if (students.length === 0) {
+                container.innerHTML = '<p class="text-secondary">В этой группе нет активных учеников</p>';
+                return;
+            }
+            
+            container.innerHTML = students.map(student => `
+                <div class="flex-between" style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <strong>${student.full_name}</strong>
+                        <br>
+                        <small class="text-secondary">${dateUtils.formatDate(student.birth_date)}</small>
+                    </div>
+                    <div class="flex gap-1">
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="radio" name="attendance_${student.id}" value="present" checked>
+                            <span class="badge badge-success">Присутствовал</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="radio" name="attendance_${student.id}" value="absent">
+                            <span class="badge badge-danger">Отсутствовал</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="radio" name="attendance_${student.id}" value="transferred">
+                            <span class="badge badge-warning">Перенос</span>
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function saveAttendance() {
+            const groupId = document.getElementById('groupSelect').value;
+            const sessionDate = document.getElementById('sessionDate').value;
+            
+            if (!groupId || !sessionDate) {
+                ui.showError('Пожалуйста, выберите группу и дату занятия');
+                return;
+            }
+            
+            const attendances = students.map(student => {
+                const status = document.querySelector(`input[name="attendance_${student.id}"]:checked`).value;
+                return {
+                    student_id: student.id,
+                    status: status,
+                    notes: null
+                };
+            });
+            
+            const data = {
+                group_id: groupId,
+                session_date: new Date(sessionDate).toISOString(),
+                attendances: attendances
+            };
+            
+            try {
+                ui.showLoading();
+                await api.post('/attendance/mark', data);
+                ui.hideLoading();
+                
+                ui.showSuccess('Посещаемость сохранена');
+                
+                // Reset form
+                document.getElementById('groupSelect').value = '';
+                document.getElementById('studentsAttendance').classList.add('hidden');
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        }
+        
+        loadData();
+    </script>
+</body>
+</html>

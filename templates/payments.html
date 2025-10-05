@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Платежи - Sambo Academy</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">🥋 Sambo Academy</div>
+            <div class="user-info">
+                <span id="userName">Загрузка...</span>
+                <button class="btn btn-outline btn-sm" onclick="auth.logout()">Выход</button>
+            </div>
+        </div>
+    </header>
+    
+    <nav class="nav container">
+        <ul class="nav-list">
+            <li class="nav-item"><a href="/" class="nav-link">Главная</a></li>
+            <li class="nav-item"><a href="/groups" class="nav-link">Группы</a></li>
+            <li class="nav-item"><a href="/students" class="nav-link">Ученики</a></li>
+            <li class="nav-item"><a href="/attendance" class="nav-link">Посещаемость</a></li>
+            <li class="nav-item"><a href="/payments" class="nav-link">Платежи</a></li>
+            <li class="nav-item"><a href="/statistics" class="nav-link">Статистика</a></li>
+            <li class="nav-item"><a href="/tournaments" class="nav-link">Турниры</a></li>
+        </ul>
+    </nav>
+    
+    <main class="container">
+        <div class="flex-between mb-2">
+            <h1>Платежи и абонементы</h1>
+            <div class="flex gap-1">
+                <button class="btn btn-primary" onclick="openCreateSubscriptionModal()">+ Создать абонемент</button>
+                <button class="btn btn-secondary" onclick="openCreatePaymentModal()">+ Добавить платеж</button>
+            </div>
+        </div>
+        
+        <div class="card mb-2">
+            <div class="flex gap-2">
+                <div class="form-group" style="flex: 1; margin: 0;">
+                    <label class="form-label">Месяц</label>
+                    <input type="month" id="monthFilter" class="form-input" onchange="loadPayments()">
+                </div>
+            </div>
+        </div>
+        
+        <div id="paymentsList">
+            <div class="spinner"></div>
+        </div>
+    </main>
+    
+    <!-- Create Subscription Modal -->
+    <div id="createSubscriptionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Создать абонемент</h2>
+                <button class="modal-close" onclick="modal.close('createSubscriptionModal')">&times;</button>
+            </div>
+            <form id="createSubscriptionForm">
+                <div class="form-group">
+                    <label class="form-label">Ученик</label>
+                    <select name="student_id" id="studentSelect" class="form-select" required></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Тип абонемента</label>
+                    <select name="subscription_type" id="subscriptionType" class="form-select" required>
+                        <option value="8_sessions">8 занятий</option>
+                        <option value="12_sessions">12 занятий</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Цена</label>
+                    <input type="number" name="price" id="subscriptionPrice" class="form-input" step="0.01" required>
+                    <small class="text-secondary" id="priceHint"></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дата начала</label>
+                    <input type="date" name="start_date" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дата окончания</label>
+                    <input type="date" name="expiry_date" class="form-input" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Создать</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Create Payment Modal -->
+    <div id="createPaymentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Добавить платеж</h2>
+                <button class="modal-close" onclick="modal.close('createPaymentModal')">&times;</button>
+            </div>
+            <form id="createPaymentForm">
+                <div class="form-group">
+                    <label class="form-label">Ученик</label>
+                    <select name="student_id" id="studentPaymentSelect" class="form-select" required></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Сумма</label>
+                    <input type="number" name="amount" class="form-input" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дата платежа</label>
+                    <input type="date" name="payment_date" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">За какой месяц</label>
+                    <input type="month" name="payment_month" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Тип платежа</label>
+                    <select name="payment_type" class="form-select" required>
+                        <option value="full">Полная оплата</option>
+                        <option value="partial">Частичная оплата</option>
+                        <option value="discount">Со скидкой</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Статус</label>
+                    <select name="status" class="form-select" required>
+                        <option value="paid">Оплачено</option>
+                        <option value="pending">Ожидается</option>
+                        <option value="overdue">Просрочено</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+    <script>
+        let students = [];
+        let subscriptions = [];
+        let payments = [];
+        let groups = [];
+        let subscriptionPrices = null; // Will be loaded from API
+        
+        async function loadData() {
+            await auth.checkAuth();
+            
+            try {
+                const user = await api.get('/auth/me');
+                document.getElementById('userName').textContent = user.full_name;
+                
+                // Load groups first
+                groups = await api.get('/groups');
+                
+                // Then load students
+                students = await api.get('/students?is_active=true');
+                populateStudentSelects();
+                
+                // Load subscription prices from settings
+                await loadSubscriptionPrices();
+                
+                // Set default month to current
+                const now = new Date();
+                document.getElementById('monthFilter').value = 
+                    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                
+                await loadPayments();
+            } catch (error) {
+                ui.showError(error.message);
+            }
+        }
+        
+        async function loadSubscriptionPrices() {
+            try {
+                subscriptionPrices = await api.get('/settings/prices');
+                // Set initial price when form loads
+                updatePriceByType();
+            } catch (error) {
+                console.error('Error loading subscription prices:', error);
+                ui.showError('Не удалось загрузить цены абонементов');
+            }
+        }
+        
+        function updatePriceByType() {
+            const typeSelect = document.getElementById('subscriptionType');
+            const studentSelect = document.getElementById('studentSelect');
+            const priceInput = document.getElementById('subscriptionPrice');
+            const priceHint = document.getElementById('priceHint');
+            
+            if (!typeSelect || !priceInput || !studentSelect || !subscriptionPrices) return;
+            
+            const selectedType = typeSelect.value;
+            const selectedStudentId = studentSelect.value;
+            
+            // Find selected student and their group
+            const student = students.find(s => s.id === selectedStudentId);
+            if (!student) return;
+            
+            const group = groups.find(g => g.id === student.group_id);
+            if (!group) return;
+            
+            // Determine age group (senior or junior)
+            const ageGroup = group.age_group; // 'senior' or 'junior'
+            let price = 0;
+            let hint = '';
+            
+            if (selectedType === '8_sessions') {
+                if (ageGroup === 'senior') {
+                    price = subscriptionPrices.subscription_8_senior_price;
+                    hint = 'Цена для старших - 8 занятий';
+                } else {
+                    price = subscriptionPrices.subscription_8_junior_price;
+                    hint = 'Цена для младших - 8 занятий';
+                }
+            } else if (selectedType === '12_sessions') {
+                if (ageGroup === 'senior') {
+                    price = subscriptionPrices.subscription_12_senior_price;
+                    hint = 'Цена для старших - 12 занятий';
+                } else {
+                    price = subscriptionPrices.subscription_12_junior_price;
+                    hint = 'Цена для младших - 12 занятий';
+                }
+            }
+            
+            priceInput.value = price;
+            priceHint.textContent = hint;
+        }
+        
+        function populateStudentSelects() {
+            const options = students.map(s => 
+                `<option value="${s.id}">${s.full_name}</option>`
+            ).join('');
+            
+            document.getElementById('studentSelect').innerHTML = options;
+            document.getElementById('studentPaymentSelect').innerHTML = options;
+        }
+        
+        // Add event listeners for subscription type and student change
+        document.addEventListener('DOMContentLoaded', () => {
+            const typeSelect = document.getElementById('subscriptionType');
+            const studentSelect = document.getElementById('studentSelect');
+            
+            if (typeSelect) {
+                typeSelect.addEventListener('change', updatePriceByType);
+            }
+            
+            if (studentSelect) {
+                studentSelect.addEventListener('change', updatePriceByType);
+            }
+        });
+        
+        async function loadPayments() {
+            const monthValue = document.getElementById('monthFilter').value;
+            if (!monthValue) return;
+            
+            const [year, month] = monthValue.split('-');
+            
+            try {
+                payments = await api.get(`/payments/month/${year}/${month}`);
+                renderPayments();
+            } catch (error) {
+                ui.showError(error.message);
+            }
+        }
+        
+        function renderPayments() {
+            const container = document.getElementById('paymentsList');
+            
+            if (payments.length === 0) {
+                container.innerHTML = '<div class="card"><p class="text-secondary">Платежей за этот месяц не найдено</p></div>';
+                return;
+            }
+            
+            const totalAmount = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+            
+            container.innerHTML = `
+                <div class="stat-card mb-2">
+                    <div class="stat-value">${totalAmount.toFixed(2)} ₽</div>
+                    <div class="stat-label">Общая сумма за месяц</div>
+                </div>
+                
+                <div class="card" style="overflow-x: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Ученик</th>
+                                <th>Сумма</th>
+                                <th>Дата платежа</th>
+                                <th>Абонемент</th>
+                                <th>Тип платежа</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${payments.map(payment => `
+                                <tr>
+                                    <td>${payment.student_name}</td>
+                                    <td>${parseFloat(payment.amount).toFixed(2)} ₽</td>
+                                    <td>${dateUtils.formatDate(payment.payment_date)}</td>
+                                    <td>${payment.subscription_type === '8_sessions' ? '8 занятий' : payment.subscription_type === '12_sessions' ? '12 занятий' : '-'}</td>
+                                    <td>${payment.payment_type === 'full' ? 'Полная' : payment.payment_type === 'partial' ? 'Частичная' : 'Скидка'}</td>
+                                    <td>
+                                        <span class="badge ${
+                                            payment.status === 'paid' ? 'badge-success' :
+                                            payment.status === 'pending' ? 'badge-warning' :
+                                            'badge-danger'
+                                        }">
+                                            ${
+                                                payment.status === 'paid' ? 'Оплачено' :
+                                                payment.status === 'pending' ? 'Ожидается' :
+                                                'Просрочено'
+                                            }
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        function openCreateSubscriptionModal() {
+            modal.open('createSubscriptionModal');
+        }
+        
+        function openCreatePaymentModal() {
+            modal.open('createPaymentModal');
+        }
+        
+        document.getElementById('createSubscriptionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                student_id: formData.get('student_id'),
+                subscription_type: formData.get('subscription_type'),
+                price: parseFloat(formData.get('price')),
+                start_date: formData.get('start_date'),
+                expiry_date: formData.get('expiry_date')
+            };
+            
+            try {
+                ui.showLoading();
+                await api.post('/subscriptions', data);
+                ui.hideLoading();
+                
+                modal.close('createSubscriptionModal');
+                e.target.reset();
+                ui.showSuccess('Абонемент создан');
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        });
+        
+        document.getElementById('createPaymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const monthValue = formData.get('payment_month');
+            const paymentMonth = monthValue + '-01'; // First day of month
+            
+            const data = {
+                student_id: formData.get('student_id'),
+                amount: parseFloat(formData.get('amount')),
+                payment_date: formData.get('payment_date'),
+                payment_month: paymentMonth,
+                payment_type: formData.get('payment_type'),
+                status: formData.get('status')
+            };
+            
+            try {
+                ui.showLoading();
+                await api.post('/payments', data);
+                ui.hideLoading();
+                
+                modal.close('createPaymentModal');
+                e.target.reset();
+                loadPayments();
+                ui.showSuccess('Платеж добавлен');
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        });
+        
+        loadData();
+    </script>
+</body>
+</html>

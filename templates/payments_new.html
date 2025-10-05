@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Платежи - Sambo Academy</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .payment-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .payment-table th {
+            background-color: #f5f5f5;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .payment-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        .payment-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .amount-input {
+            width: 100px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.9rem;
+        }
+        .paid-row {
+            background-color: #f0fff4;
+        }
+        .overpaid-indicator {
+            color: #059669;
+            font-weight: 600;
+        }
+        .underpaid-indicator {
+            color: #dc2626;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Component -->
+    <div id="app-header"></div>
+    
+    <!-- Navigation Component -->
+    <div id="app-nav"></div>
+    
+    <main class="container">
+        <h1 class="mb-2">Платежи за абонементы</h1>
+        
+        <!-- Filters -->
+        <div class="card mb-2">
+            <label class="form-label mb-1">Выберите группу:</label>
+            <div id="groupChips" class="chips-container"></div>
+            
+            <div class="form-group" style="max-width: 250px; margin-top: 1rem;">
+                <label class="form-label">Месяц и год</label>
+                <input type="month" id="monthFilter" class="form-input" onchange="onFilterChange()" required>
+            </div>
+        </div>
+        
+        <!-- Summary -->
+        <div id="summary" class="card mb-2" style="display: none;">
+            <h3>Итого</h3>
+            <div class="grid grid-3">
+                <div>
+                    <p class="text-secondary">Всего учеников</p>
+                    <p class="text-xl" id="totalStudents">0</p>
+                </div>
+                <div>
+                    <p class="text-secondary">Оплатили</p>
+                    <p class="text-xl" style="color: #059669;" id="paidStudents">0</p>
+                </div>
+                <div>
+                    <p class="text-secondary">Не оплатили</p>
+                    <p class="text-xl" style="color: #dc2626;" id="unpaidStudents">0</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Students Payment List -->
+        <div id="paymentsListContainer" style="display: none;">
+            <div class="card" style="overflow-x: auto;">
+                <table class="payment-table table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">№</th>
+                            <th>ФИО ученика</th>
+                            <th>Тип абонемента</th>
+                            <th>Стандартная цена</th>
+                            <th>Фактическая сумма</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsTableBody">
+                        <!-- Will be filled dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="noDataMessage" class="card" style="display: none;">
+            <p class="text-secondary">Выберите месяц и группу для отображения учеников</p>
+        </div>
+    </main>
+    
+    <!-- Payment Details Modal -->
+    <div id="paymentDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Детали оплаты</h2>
+                <button class="modal-close" onclick="modal.close('paymentDetailsModal')">&times;</button>
+            </div>
+            <div id="paymentDetailsContent">
+                <div class="form-group">
+                    <label class="form-label">Ученик</label>
+                    <input type="text" id="detailsStudentName" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Тип абонемента</label>
+                    <input type="text" id="detailsSubscriptionType" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Стандартная цена (₽)</label>
+                    <input type="number" id="detailsStandardPrice" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Фактическая сумма оплаты (₽)</label>
+                    <input type="number" id="detailsActualAmount" class="form-input" min="0" step="100">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Дата оплаты</label>
+                    <input type="date" id="detailsPaymentDate" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Статус</label>
+                    <input type="text" id="detailsStatus" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Примечание</label>
+                    <textarea id="detailsNotes" class="form-textarea" rows="2"></textarea>
+                </div>
+                
+                <div class="flex gap-1">
+                    <button class="btn btn-primary" onclick="updatePayment()">Сохранить изменения</button>
+                    <button class="btn btn-danger" onclick="cancelPayment()">Отменить оплату</button>
+                    <button class="btn btn-outline" onclick="modal.close('paymentDetailsModal')">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Регистрация оплаты</h2>
+                <button class="modal-close" onclick="modal.close('paymentModal')">&times;</button>
+            </div>
+            <form id="paymentForm">
+                <input type="hidden" id="paymentStudentId">
+                <input type="hidden" id="paymentMonth">
+                
+                <div class="form-group">
+                    <label class="form-label">Ученик</label>
+                    <input type="text" id="paymentStudentName" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Тип абонемента</label>
+                    <select id="paymentSubscriptionType" class="form-select" required>
+                        <option value="8_sessions">8 занятий</option>
+                        <option value="12_sessions">12 занятий</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Стандартная цена (₽)</label>
+                    <input type="number" id="paymentStandardPrice" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Фактическая сумма оплаты (₽)</label>
+                    <input type="number" id="paymentActualAmount" class="form-input" min="0" step="100" required>
+                    <small class="text-secondary">Если оплачено больше, переплата перейдет на следующий месяц</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Примечание</label>
+                    <textarea id="paymentNotes" class="form-textarea" rows="2" placeholder="Укажите причину изменения суммы: скидка, переплата и т.д."></textarea>
+                </div>
+                
+                <div class="flex gap-1">
+                    <button type="submit" class="btn btn-primary">Сохранить оплату</button>
+                    <button type="button" class="btn btn-outline" onclick="modal.close('paymentModal')">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="/static/js/components.js"></script>
+    
+    <script src="/static/js/app.js"></script>
+    <script>
+        let groups = [];
+        let students = [];
+        let subscriptionPrices = null;
+        let paymentsData = [];
+        let currentMonth = '';
+        let currentGroupId = '';
+        let currentPaymentId = null;
+        let currentSubscriptionId = null;
+        
+        async function loadData() {
+            await auth.checkAuth();
+            
+            try {
+                const user = await api.get('/auth/me');
+                document.getElementById('userName').textContent = user.full_name;
+                
+                // Load groups
+                groups = await api.get('/groups');
+                populateGroupFilter();
+                
+                // Load subscription prices
+                subscriptionPrices = await api.get('/settings/prices');
+                
+                // Set default month to current
+                const now = new Date();
+                document.getElementById('monthFilter').value = 
+                    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                
+            } catch (error) {
+                ui.showError(error.message);
+            }
+        }
+        
+        let selectedGroupId = null;
+        
+        function populateGroupFilter() {
+            const groupChips = document.getElementById('groupChips');
+            
+            groups.forEach(group => {
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.textContent = group.name;
+                chip.dataset.groupId = group.id;
+                chip.onclick = () => selectGroup(group.id);
+                groupChips.appendChild(chip);
+            });
+        }
+        
+        function selectGroup(groupId) {
+            selectedGroupId = groupId;
+            
+            // Update chips UI
+            document.querySelectorAll('#groupChips .chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            
+            const activeChip = document.querySelector(`#groupChips .chip[data-group-id="${groupId}"]`);
+            if (activeChip) {
+                activeChip.classList.add('active');
+            }
+            
+            onFilterChange();
+        }
+        
+        function onFilterChange() {
+            const monthFilter = document.getElementById('monthFilter').value;
+            if (selectedGroupId && monthFilter) {
+                loadPaymentsList();
+            }
+        }
+        
+        async function loadPaymentsList() {
+            const month = document.getElementById('monthFilter').value;
+            const groupId = selectedGroupId;
+            
+            if (!month || !groupId) {
+                ui.showError('Выберите месяц и группу');
+                return;
+            }
+            
+            currentMonth = month;
+            currentGroupId = groupId;
+            
+            try {
+                ui.showLoading();
+                
+                // Load students of the group
+                students = await api.get(`/students?group_id=${groupId}&is_active=true`);
+                
+                // Load payments for this month
+                const [year, monthNum] = month.split('-');
+                try {
+                    paymentsData = await api.get(`/payments/month/${year}/${monthNum}`);
+                } catch (e) {
+                    paymentsData = [];
+                }
+                
+                renderPaymentsTable();
+                updateSummary();
+                
+                document.getElementById('noDataMessage').style.display = 'none';
+                document.getElementById('summary').style.display = 'block';
+                document.getElementById('paymentsListContainer').style.display = 'block';
+                
+                ui.hideLoading();
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        }
+        
+        function renderPaymentsTable() {
+            const tbody = document.getElementById('paymentsTableBody');
+            const group = groups.find(g => g.id === currentGroupId);
+            
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-secondary">В группе нет учеников</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = students.map((student, index) => {
+                const payment = findStudentPayment(student.id);
+                const isPaid = payment !== null;
+                const rowClass = isPaid ? 'paid-row' : '';
+                
+                // Calculate standard price
+                const ageGroup = group.age_group;
+                let standardPrice8 = ageGroup === 'senior' 
+                    ? subscriptionPrices.subscription_8_senior_price 
+                    : subscriptionPrices.subscription_8_junior_price;
+                let standardPrice12 = ageGroup === 'senior' 
+                    ? subscriptionPrices.subscription_12_senior_price 
+                    : subscriptionPrices.subscription_12_junior_price;
+                
+                // Use student's active subscription type, not payment's subscription type
+                let subscriptionType = student.subscription_type || '8_sessions';
+                let standardPrice = subscriptionType === '12_sessions' ? standardPrice12 : standardPrice8;
+                let actualAmount = payment ? payment.amount : 0;
+                
+                let statusBadge = '';
+                let amountInfo = '';
+                
+                if (isPaid) {
+                    if (actualAmount > standardPrice) {
+                        amountInfo = `<span class="overpaid-indicator">+${actualAmount - standardPrice}₽</span>`;
+                        statusBadge = '<span class="badge badge-success">Оплачено</span>';
+                    } else if (actualAmount < standardPrice) {
+                        amountInfo = `<span class="underpaid-indicator">-${standardPrice - actualAmount}₽</span>`;
+                        statusBadge = '<span class="badge badge-warning">Частично</span>';
+                    } else {
+                        statusBadge = '<span class="badge badge-success">Оплачено</span>';
+                    }
+                } else {
+                    statusBadge = '<span class="badge badge-danger">Не оплачено</span>';
+                }
+                
+                return `
+                    <tr class="${rowClass}">
+                        <td style="text-align: center;">${index + 1}</td>
+                        <td>${student.full_name}</td>
+                        <td>${subscriptionType === '12_sessions' ? '12 занятий' : '8 занятий'}</td>
+                        <td>${standardPrice}₽</td>
+                        <td>${isPaid ? actualAmount + '₽' : '-'} ${amountInfo}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div class="flex gap-1">
+                                ${isPaid 
+                                    ? `<button class="btn btn-sm btn-outline" onclick='viewPaymentDetails("${payment.id}")'>Детали</button>`
+                                    : `
+                                        <button class="btn btn-sm btn-success" onclick='quickStandardPayment("${student.id}", "${student.full_name.replace(/"/g, '&quot;')}")'>Стандартная оплата</button>
+                                        <button class="btn btn-sm btn-outline" onclick='openPaymentModal("${student.id}", "${student.full_name.replace(/"/g, '&quot;')}")'>Оплатить</button>
+                                    `
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function findStudentPayment(studentId) {
+            return paymentsData.find(p => p.student_id === studentId) || null;
+        }
+        
+        function updateSummary() {
+            const total = students.length;
+            const paid = students.filter(s => findStudentPayment(s.id) !== null).length;
+            const unpaid = total - paid;
+            
+            document.getElementById('totalStudents').textContent = total;
+            document.getElementById('paidStudents').textContent = paid;
+            document.getElementById('unpaidStudents').textContent = unpaid;
+        }
+        
+        async function quickStandardPayment(studentId, studentName) {
+            if (!ui.confirm(`Зарегистрировать стандартную оплату для ${studentName}?`)) {
+                return;
+            }
+            
+            const group = groups.find(g => g.id === currentGroupId);
+            const ageGroup = group.age_group;
+            
+            // Calculate standard price for 8 sessions
+            const standardPrice = ageGroup === 'senior' 
+                ? subscriptionPrices.subscription_8_senior_price 
+                : subscriptionPrices.subscription_8_junior_price;
+            
+            const subscriptionType = '8_sessions';
+            const [year, month] = currentMonth.split('-');
+            
+            // Create subscription
+            const subscriptionData = {
+                student_id: studentId,
+                subscription_type: subscriptionType,
+                price: standardPrice,
+                start_date: `${year}-${month}-01`
+            };
+            
+            // Create payment
+            const paymentData = {
+                student_id: studentId,
+                amount: standardPrice,
+                payment_type: 'full',
+                payment_date: new Date().toISOString().split('T')[0],
+                payment_month: `${year}-${month}-01`,
+                status: 'paid',
+                notes: 'Стандартная оплата'
+            };
+            
+            try {
+                ui.showLoading();
+                
+                await api.post('/subscriptions', subscriptionData);
+                await api.post('/payments', paymentData);
+                
+                ui.hideLoading();
+                ui.showSuccess(`Оплата зарегистрирована: ${standardPrice}₽`);
+                
+                // Reload payments list
+                await loadPaymentsList();
+                
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        }
+        
+        function openPaymentModal(studentId, studentName) {
+            const student = students.find(s => s.id === studentId);
+            const group = groups.find(g => g.id === currentGroupId);
+            
+            document.getElementById('paymentStudentId').value = studentId;
+            document.getElementById('paymentStudentName').value = studentName;
+            document.getElementById('paymentMonth').value = currentMonth;
+            
+            // Calculate standard price
+            const ageGroup = group.age_group;
+            const standardPrice8 = ageGroup === 'senior' 
+                ? subscriptionPrices.subscription_8_senior_price 
+                : subscriptionPrices.subscription_8_junior_price;
+            
+            document.getElementById('paymentStandardPrice').value = standardPrice8;
+            document.getElementById('paymentActualAmount').value = standardPrice8;
+            document.getElementById('paymentSubscriptionType').value = '8_sessions';
+            document.getElementById('paymentNotes').value = '';
+            
+            modal.open('paymentModal');
+        }
+        
+        // Update standard price when subscription type changes
+        document.addEventListener('DOMContentLoaded', () => {
+            const typeSelect = document.getElementById('paymentSubscriptionType');
+            if (typeSelect) {
+                typeSelect.addEventListener('change', () => {
+                    const studentId = document.getElementById('paymentStudentId').value;
+                    const student = students.find(s => s.id === studentId);
+                    const group = groups.find(g => g.id === currentGroupId);
+                    
+                    if (!group || !subscriptionPrices) return;
+                    
+                    const ageGroup = group.age_group;
+                    const type = typeSelect.value;
+                    
+                    let standardPrice;
+                    if (type === '12_sessions') {
+                        standardPrice = ageGroup === 'senior' 
+                            ? subscriptionPrices.subscription_12_senior_price 
+                            : subscriptionPrices.subscription_12_junior_price;
+                    } else {
+                        standardPrice = ageGroup === 'senior' 
+                            ? subscriptionPrices.subscription_8_senior_price 
+                            : subscriptionPrices.subscription_8_junior_price;
+                    }
+                    
+                    document.getElementById('paymentStandardPrice').value = standardPrice;
+                    document.getElementById('paymentActualAmount').value = standardPrice;
+                });
+            }
+        });
+        
+        document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const studentId = document.getElementById('paymentStudentId').value;
+            const subscriptionType = document.getElementById('paymentSubscriptionType').value;
+            const amount = parseFloat(document.getElementById('paymentActualAmount').value);
+            const notes = document.getElementById('paymentNotes').value;
+            const [year, month] = currentMonth.split('-');
+            
+            // Create subscription first
+            const subscriptionData = {
+                student_id: studentId,
+                subscription_type: subscriptionType,
+                price: amount,
+                start_date: `${year}-${month}-01`
+            };
+            
+            // Create payment
+            const paymentData = {
+                student_id: studentId,
+                amount: amount,
+                payment_type: 'full',
+                payment_date: new Date().toISOString().split('T')[0],
+                payment_month: `${year}-${month}-01`,
+                status: 'paid',
+                notes: notes || 'Нестандартная оплата'
+            };
+            
+            try {
+                ui.showLoading();
+                
+                await api.post('/subscriptions', subscriptionData);
+                await api.post('/payments', paymentData);
+                
+                ui.hideLoading();
+                modal.close('paymentModal');
+                
+                ui.showSuccess('Оплата зарегистрирована');
+                
+                // Reload payments list
+                await loadPaymentsList();
+                
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        });
+        
+        async function viewPaymentDetails(paymentId) {
+            try {
+                ui.showLoading();
+                
+                // Find payment in current data
+                const payment = paymentsData.find(p => p.id === paymentId);
+                if (!payment) {
+                    ui.showError('Платеж не найден');
+                    return;
+                }
+                
+                // Find student
+                const student = students.find(s => s.id === payment.student_id);
+                const group = groups.find(g => g.id === currentGroupId);
+                
+                // Get subscription details
+                let subscription = null;
+                if (payment.subscription_id) {
+                    try {
+                        const subscriptions = await api.get(`/subscriptions/student/${payment.student_id}`);
+                        subscription = subscriptions.find(s => s.id === payment.subscription_id);
+                    } catch (e) {
+                        console.error('Error loading subscription:', e);
+                    }
+                }
+                
+                // Calculate standard price
+                const ageGroup = group.age_group;
+                let standardPrice;
+                if (subscription) {
+                    const type = subscription.subscription_type;
+                    if (type === '12_sessions') {
+                        standardPrice = ageGroup === 'senior' 
+                            ? subscriptionPrices.subscription_12_senior_price 
+                            : subscriptionPrices.subscription_12_junior_price;
+                    } else {
+                        standardPrice = ageGroup === 'senior' 
+                            ? subscriptionPrices.subscription_8_senior_price 
+                            : subscriptionPrices.subscription_8_junior_price;
+                    }
+                } else {
+                    standardPrice = payment.amount;
+                }
+                
+                // Fill modal
+                document.getElementById('detailsStudentName').value = student.full_name;
+                document.getElementById('detailsSubscriptionType').value = 
+                    subscription ? (subscription.subscription_type === '12_sessions' ? '12 занятий' : '8 занятий') : '-';
+                document.getElementById('detailsStandardPrice').value = standardPrice;
+                document.getElementById('detailsActualAmount').value = payment.amount;
+                document.getElementById('detailsPaymentDate').value = payment.payment_date;
+                document.getElementById('detailsStatus').value = 
+                    payment.status === 'paid' ? 'Оплачено' : 
+                    payment.status === 'pending' ? 'Ожидается' : 'Просрочено';
+                document.getElementById('detailsNotes').value = payment.notes || '';
+                
+                currentPaymentId = paymentId;
+                currentSubscriptionId = payment.subscription_id;
+                
+                ui.hideLoading();
+                modal.open('paymentDetailsModal');
+                
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        }
+        
+        async function updatePayment() {
+            if (!currentPaymentId) return;
+            
+            const newAmount = parseFloat(document.getElementById('detailsActualAmount').value);
+            const notes = document.getElementById('detailsNotes').value;
+            
+            if (!ui.confirm('Сохранить изменения в оплате?')) {
+                return;
+            }
+            
+            try {
+                ui.showLoading();
+                
+                // Update payment
+                await api.put(`/payments/${currentPaymentId}`, {
+                    amount: newAmount,
+                    notes: notes
+                });
+                
+                // Update subscription price if exists
+                if (currentSubscriptionId) {
+                    await api.put(`/subscriptions/${currentSubscriptionId}`, {
+                        price: newAmount
+                    });
+                }
+                
+                ui.hideLoading();
+                modal.close('paymentDetailsModal');
+                
+                ui.showSuccess('Оплата обновлена');
+                await loadPaymentsList();
+                
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        }
+        
+        async function cancelPayment() {
+            if (!currentPaymentId) return;
+            
+            if (!ui.confirm('Вы уверены, что хотите отменить эту оплату? Это действие удалит оплату и абонемент.')) {
+                return;
+            }
+            
+            try {
+                ui.showLoading();
+                
+                // Delete subscription first (if exists)
+                if (currentSubscriptionId) {
+                    try {
+                        await api.delete(`/subscriptions/${currentSubscriptionId}`);
+                    } catch (e) {
+                        console.error('Error deleting subscription:', e);
+                    }
+                }
+                
+                // Delete payment
+                await api.delete(`/payments/${currentPaymentId}`);
+                
+                ui.hideLoading();
+                modal.close('paymentDetailsModal');
+                
+                ui.showSuccess('Оплата отменена');
+                await loadPaymentsList();
+                
+            } catch (error) {
+                ui.hideLoading();
+                ui.showError(error.message);
+            }
+        }
+        
+        loadData();
+    </script>
+</body>
+</html>
