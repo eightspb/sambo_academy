@@ -50,4 +50,10 @@ async function loadDashboard() {
 }
 
 // Initialize page
-loadDashboard();
+
+// Wait for all scripts to load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+} else {
+    loadDashboard();
+}

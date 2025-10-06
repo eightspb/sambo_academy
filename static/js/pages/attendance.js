@@ -346,4 +346,10 @@ function formatDate(date) {
 }
 
 // Initialize page
-loadData();
+
+// Wait for all scripts to load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadData);
+} else {
+    loadData();
+}

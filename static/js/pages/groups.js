@@ -165,4 +165,10 @@ async function deleteGroup(groupId) {
 }
 
 // Initialize page
-loadGroups();
+
+// Wait for all scripts to load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadGroups);
+} else {
+    loadGroups();
+}

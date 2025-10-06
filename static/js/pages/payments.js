@@ -291,4 +291,9 @@ document.getElementById('createPaymentForm').addEventListener('submit', async (e
     }
 });
 
-loadData();
+// Wait for all scripts to load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadData);
+} else {
+    loadData();
+}

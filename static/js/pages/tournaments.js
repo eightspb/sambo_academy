@@ -388,4 +388,10 @@ async function deleteTournament(tournamentId) {
     }
 }
 
-loadData();
+
+// Wait for all scripts to load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadData);
+} else {
+    loadData();
+}
