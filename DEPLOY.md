@@ -125,6 +125,26 @@ ssh slava@193.42.124.51 'ls -lh ~/backups/'
 # Скачать последний бэкап
 scp -P 22 slava@193.42.124.51:~/backups/latest.sql.gz ./backups/
 ```
+### 🔄 Восстановление из бэкапа
+
+Если нужно восстановить БД из автобэкапа:
+
+```bash
+# Скачать бэкап
+scp -P 22 slava@193.42.124.51:~/backups/latest.sql.gz ./backups/
+
+# Распаковать
+gunzip ./backups/latest.sql.gz
+
+# Восстановить на VPS
+ssh slava@193.42.124.51
+cd sambo_academy
+docker compose -f docker-compose.production.yml stop app
+docker compose -f docker-compose.production.yml exec -T db psql -U sambo_user -d postgres -c 'DROP DATABASE sambo_academy;'
+docker compose -f docker-compose.production.yml exec -T db psql -U sambo_user -d postgres -c 'CREATE DATABASE sambo_academy;'
+docker compose -f docker-compose.production.yml exec -T db psql -U sambo_user sambo_academy < backup.sql
+docker compose -f docker-compose.production.yml start app
+```
 
 ---
 
@@ -183,6 +203,27 @@ docker compose -f docker-compose.production.yml up -d
 ---
 
 ## 🆘 Проблемы
+
+### Сброс пароля администратора
+
+Если забыли пароль:
+
+```bash
+# Локально - загрузить скрипт на VPS
+scp -P 22 reset_admin_password.py slava@193.42.124.51:~/sambo_academy/
+
+# На VPS - скопировать в контейнер и запустить
+ssh slava@193.42.124.51
+cd sambo_academy
+docker compose -f docker-compose.production.yml cp reset_admin_password.py app:/app/
+docker compose -f docker-compose.production.yml exec app python reset_admin_password.py admin новый_пароль
+```
+
+**Пример:**
+```bash
+docker compose -f docker-compose.production.yml exec app python reset_admin_password.py admin admin123
+# ✅ Пароль изменен на: admin123
+```
 
 ### Порт 80 занят (address already in use)
 ```bash
