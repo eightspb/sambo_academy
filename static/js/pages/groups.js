@@ -9,7 +9,7 @@ async function loadGroups() {
     
     try {
         const user = await api.get('/auth/me');
-        document.getElementById('userName').textContent = user.full_name;
+        ui.setUserName(user.full_name);
         
         groups = await api.get('/groups');
         renderGroups();

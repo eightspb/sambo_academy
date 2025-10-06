@@ -12,7 +12,7 @@ async function loadData() {
     
     try {
         const user = await api.get('/auth/me');
-        document.getElementById('userName').textContent = user.full_name;
+        ui.setUserName(user.full_name);
         
         // Load groups first
         groups = await api.get('/groups');

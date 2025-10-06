@@ -126,6 +126,14 @@ const ui = {
     
     confirm(message) {
         return window.confirm(message);
+    },
+    
+    // Безопасная установка имени пользователя
+    setUserName(fullName) {
+        const userNameElement = document.getElementById('userName');
+        if (userNameElement) {
+            userNameElement.textContent = fullName;
+        }
     }
 };
 
