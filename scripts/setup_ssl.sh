@@ -53,7 +53,7 @@ docker compose -f docker-compose.production.yml stop nginx
 
 # 4. Получить сертификат
 echo -e "${YELLOW}🔐 Получение SSL сертификата...${NC}"
-docker run --rm -it \
+docker run --rm \
   -v $(pwd)/certbot/conf:/etc/letsencrypt \
   -v $(pwd)/certbot/www:/var/www/certbot \
   -p 80:80 \
@@ -62,6 +62,7 @@ docker run --rm -it \
   --preferred-challenges http \
   --email $EMAIL \
   --agree-tos \
+  --non-interactive \
   --no-eff-email \
   -d $DOMAIN
 
