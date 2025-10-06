@@ -30,7 +30,8 @@ nano .env.production
 ```bash
 SECRET_KEY=вставьте_сгенерированный_ключ_32_символа
 POSTGRES_PASSWORD=придумайте_надежный_пароль
-DATABASE_URL=postgresql+asyncpg://sambo_user:тот_же_пароль@localhost:5432/sambo_academy
+# ⚠️ ВАЖНО: используйте 'db' вместо 'localhost' для Docker!
+DATABASE_URL=postgresql+asyncpg://sambo_user:тот_же_пароль@db:5432/sambo_academy
 ```
 
 **Про пароли БД:**
@@ -156,10 +157,27 @@ docker compose -f docker-compose.production.yml up -d
 
 ## 🆘 Проблемы
 
-### Приложение не запускается
+### Порт 80 занят (address already in use)
+```bash
+# Подключиться к VPS
+ssh slava@193.42.124.51
+
+# Остановить системный nginx
+sudo systemctl stop nginx
+sudo systemctl disable nginx
+
+# Запустить контейнеры
+cd sambo_academy
+docker compose -f docker-compose.production.yml up -d
+```
+
+### Приложение не запускается (502 Bad Gateway)
 ```bash
 bash scripts/monitor.sh
 # → 2) Показать логи приложения
+
+# Если видите "Connection refused" - проверьте DATABASE_URL
+# Должно быть: @db:5432 (не @localhost:5432)
 ```
 
 ### БД не подключается
@@ -173,11 +191,11 @@ cat .env.production | grep POSTGRES_PASSWORD
 
 ### Ошибка при деплое
 ```bash
-# Посмотреть что в .env
+# Посмотреть SSH настройки
 cat .env | grep SSH
 
 # Попробовать подключиться вручную
-ssh vbazar1t@193.42.124.51
+ssh slava@193.42.124.51
 ```
 
 ---
