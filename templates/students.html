@@ -102,9 +102,18 @@
                     <input type="email" id="editEmail" name="email" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Группа</label>
+                    <label class="form-label">Основная группа</label>
                     <select id="editGroupId" name="group_id" class="form-select" required>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дополнительные группы (бонус) 🎁</label>
+                    <select id="editAdditionalGroups" name="additional_group_ids" class="form-select" multiple size="4">
+                    </select>
+                    <small class="text-secondary" style="display: block; margin-top: 0.5rem;">
+                        💡 Студент сможет посещать эти группы бесплатно. Посещения будут списываться из основного абонемента.
+                        Для выбора нескольких групп удерживайте Ctrl (Cmd на Mac).
+                    </small>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Тип абонемента</label>
@@ -155,6 +164,7 @@
             const groupChips = document.getElementById('groupChips');
             const groupSelect = document.getElementById('groupSelect');
             const editGroupSelect = document.getElementById('editGroupId');
+            const editAdditionalGroupsSelect = document.getElementById('editAdditionalGroups');
             
             const groupOptions = groups.map(g => 
                 `<option value="${g.id}">${g.name}</option>`
@@ -163,6 +173,9 @@
             groupSelect.innerHTML = groupOptions;
             if (editGroupSelect) {
                 editGroupSelect.innerHTML = groupOptions;
+            }
+            if (editAdditionalGroupsSelect) {
+                editAdditionalGroupsSelect.innerHTML = groupOptions;
             }
             
             // Create chips for groups
@@ -272,13 +285,31 @@
                         <tbody>
                             ${students.map((student, index) => {
                                 const group = groups.find(g => g.id === student.group_id);
+                                
+                                // Get additional groups
+                                let additionalGroupsHtml = '';
+                                if (student.additional_group_ids && student.additional_group_ids.length > 0) {
+                                    const additionalGroupNames = student.additional_group_ids
+                                        .map(id => {
+                                            const g = groups.find(gr => gr.id === id);
+                                            return g ? g.name : null;
+                                        })
+                                        .filter(name => name);
+                                    
+                                    if (additionalGroupNames.length > 0) {
+                                        additionalGroupsHtml = `<br><small style="color: #ff6b6b; font-weight: 500;">
+                                            🎁 Бонус: ${additionalGroupNames.join(', ')}
+                                        </small>`;
+                                    }
+                                }
+                                
                                 return `
                                     <tr>
                                         <td style="text-align: center; font-weight: 500;">${index + 1}</td>
                                         <td>${student.full_name}</td>
                                         <td>${dateUtils.formatDate(student.birth_date)}</td>
                                         <td>${student.phone}</td>
-                                        <td>${group ? group.name : '-'}</td>
+                                        <td>${group ? group.name : '-'}${additionalGroupsHtml}</td>
                                         <td>
                                             <span class="badge ${student.is_active ? 'badge-success' : 'badge-danger'}">
                                                 ${student.is_active ? 'Активен' : 'Неактивен'}
@@ -325,8 +356,47 @@
             document.getElementById('editIsActive').value = student.is_active.toString();
             document.getElementById('editNotes').value = student.notes || '';
             
+            // Disable primary group in additional groups list
+            updateAdditionalGroupsList();
+            
+            // Set additional groups (deselect all first, then select the ones student has)
+            const additionalGroupsSelect = document.getElementById('editAdditionalGroups');
+            Array.from(additionalGroupsSelect.options).forEach(option => option.selected = false);
+            
+            if (student.additional_group_ids && student.additional_group_ids.length > 0) {
+                student.additional_group_ids.forEach(groupId => {
+                    const option = Array.from(additionalGroupsSelect.options).find(opt => opt.value === groupId);
+                    if (option && !option.disabled) option.selected = true;
+                });
+            }
+            
             modal.open('editStudentModal');
         }
+        
+        // Update additional groups list when primary group changes
+        function updateAdditionalGroupsList() {
+            const primaryGroupId = document.getElementById('editGroupId').value;
+            const additionalGroupsSelect = document.getElementById('editAdditionalGroups');
+            
+            Array.from(additionalGroupsSelect.options).forEach(option => {
+                if (option.value === primaryGroupId) {
+                    option.disabled = true;
+                    option.selected = false;
+                    option.textContent = option.textContent.replace(' (основная группа)', '') + ' (основная группа)';
+                } else {
+                    option.disabled = false;
+                    option.textContent = option.textContent.replace(' (основная группа)', '');
+                }
+            });
+        }
+        
+        // Listen for primary group changes
+        document.addEventListener('DOMContentLoaded', () => {
+            const editGroupSelect = document.getElementById('editGroupId');
+            if (editGroupSelect) {
+                editGroupSelect.addEventListener('change', updateAdditionalGroupsList);
+            }
+        });
         
         document.getElementById('createStudentForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -362,12 +432,19 @@
             const formData = new FormData(e.target);
             const studentId = document.getElementById('editStudentId').value;
             
+            // Get selected additional groups
+            const additionalGroupsSelect = document.getElementById('editAdditionalGroups');
+            const additionalGroupIds = Array.from(additionalGroupsSelect.selectedOptions)
+                .map(option => option.value)
+                .filter(id => id); // Remove empty values
+            
             const data = {
                 full_name: formData.get('full_name'),
                 birth_date: formData.get('birth_date'),
                 phone: formData.get('phone'),
                 email: formData.get('email') || null,
                 group_id: formData.get('group_id'),
+                additional_group_ids: additionalGroupIds,
                 is_active: formData.get('is_active') === 'true',
                 notes: formData.get('notes') || null
             };
