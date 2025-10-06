@@ -270,13 +270,13 @@ function renderAttendanceList() {
                     class="status-btn btn-present ${student.status === 'present' ? 'active-present' : ''}"
                     onclick="setStatus(${index}, 'present')"
                 >
-                    ✓ Присутствовал
+                    ✓ Был
                 </button>
                 <button 
                     class="status-btn btn-absent ${student.status === 'absent' ? 'active-absent' : ''}"
                     onclick="setStatus(${index}, 'absent')"
                 >
-                    ✗ Отсутствовал
+                    ✗ Не был
                 </button>
                 <button 
                     class="status-btn btn-transferred ${student.status === 'transferred' ? 'active-transferred' : ''}"

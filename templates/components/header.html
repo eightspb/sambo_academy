@@ -1,9 +1,17 @@
 <header class="header">
     <div class="header-content">
-        <div class="logo">🥋 Sambo Academy</div>
+        <div class="logo">
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <span class="menu-icon">☰</span>
+            </button>
+            <span class="logo-text">🥋 Sambo Academy</span>
+        </div>
         <div class="user-info">
-            <span id="userName">Загрузка...</span>
-            <button class="btn btn-outline btn-sm" onclick="auth.logout()">Выход</button>
+            <span id="userName" class="user-name">Загрузка...</span>
+            <button class="btn btn-outline btn-sm btn-logout" onclick="auth.logout()">
+                <span class="logout-text">Выход</span>
+                <span class="logout-icon">→</span>
+            </button>
         </div>
     </div>
 </header>

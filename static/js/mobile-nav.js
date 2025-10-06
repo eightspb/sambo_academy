@@ -4,17 +4,6 @@
  */
 
 (function() {
-    // Create mobile menu button
-    function createMobileMenuButton() {
-        const btn = document.createElement('button');
-        btn.className = 'mobile-menu-btn';
-        btn.innerHTML = '☰';
-        btn.setAttribute('aria-label', 'Открыть меню');
-        btn.onclick = toggleMobileMenu;
-        document.body.appendChild(btn);
-        return btn;
-    }
-    
     // Create overlay
     function createOverlay() {
         const overlay = document.createElement('div');
@@ -28,15 +17,14 @@
     function toggleMobileMenu() {
         const nav = document.querySelector('.nav');
         const overlay = document.querySelector('.mobile-overlay');
-        const btn = document.querySelector('.mobile-menu-btn');
+        const btn = document.querySelector('.mobile-menu-btn .menu-icon');
         
-        if (nav.classList.contains('mobile-open')) {
+        if (nav && nav.classList.contains('mobile-open')) {
             closeMobileMenu();
-        } else {
+        } else if (nav) {
             nav.classList.add('mobile-open');
-            overlay.classList.add('active');
-            btn.innerHTML = '✕';
-            btn.setAttribute('aria-label', 'Закрыть меню');
+            if (overlay) overlay.classList.add('active');
+            if (btn) btn.textContent = '✕';
             document.body.style.overflow = 'hidden'; // Prevent scroll
         }
     }
@@ -45,12 +33,11 @@
     function closeMobileMenu() {
         const nav = document.querySelector('.nav');
         const overlay = document.querySelector('.mobile-overlay');
-        const btn = document.querySelector('.mobile-menu-btn');
+        const btn = document.querySelector('.mobile-menu-btn .menu-icon');
         
-        nav.classList.remove('mobile-open');
-        overlay.classList.remove('active');
-        btn.innerHTML = '☰';
-        btn.setAttribute('aria-label', 'Открыть меню');
+        if (nav) nav.classList.remove('mobile-open');
+        if (overlay) overlay.classList.remove('active');
+        if (btn) btn.textContent = '☰';
         document.body.style.overflow = ''; // Restore scroll
     }
     
@@ -79,7 +66,6 @@
         setTimeout(() => {
             const nav = document.querySelector('.nav');
             if (nav) {
-                createMobileMenuButton();
                 createOverlay();
                 closeOnNavClick();
                 window.addEventListener('resize', handleResize);
@@ -94,9 +80,7 @@
         init();
     }
     
-    // Expose functions globally if needed
-    window.mobileNav = {
-        toggle: toggleMobileMenu,
-        close: closeMobileMenu
-    };
+    // Expose functions globally for header button
+    window.toggleMobileMenu = toggleMobileMenu;
+    window.closeMobileMenu = closeMobileMenu;
 })();
