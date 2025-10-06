@@ -1,0 +1,27 @@
+/* Offline Page Styles */
+
+.offline-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+}
+
+.offline-icon {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+}
+
+.offline-title {
+    font-size: 2rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.offline-message {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
