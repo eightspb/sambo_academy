@@ -69,7 +69,10 @@
             
             try {
                 const user = await api.get('/auth/me');
-                document.getElementById('userName').textContent = user.full_name;
+                const userNameElement = document.getElementById('userName');
+                if (userNameElement) {
+                    userNameElement.textContent = user.full_name;
+                }
                 
                 // Populate years
                 const currentYear = new Date().getFullYear();

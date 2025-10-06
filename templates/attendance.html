@@ -435,12 +435,12 @@
                 return;
             }
             
-            container.innerHTML = attendanceData.map((student, index) => `
+            container.innerHTML = attendanceData.map((student, index) => {
+                const bonusBadge = student.is_bonus_group ? '<span style="color: #ff6b6b; font-weight: bold; margin-left: 0.5rem;">🎁 Бонус</span>' : '';
+                return `
                 <div class="attendance-row">
                     <div>
-                        <strong>${student.full_name}</strong>
-                        <br>
-                        <small class="text-secondary">${dateUtils.formatDate(student.birth_date)}</small>
+                        <strong>${student.full_name}</strong>${bonusBadge}
                     </div>
                     <div class="status-buttons">
                         <button 
@@ -463,7 +463,8 @@
                         </button>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
         
         function setStatus(index, status) {

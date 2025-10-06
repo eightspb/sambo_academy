@@ -110,9 +110,13 @@
                     <label class="form-label">Дополнительные группы (бонус) 🎁</label>
                     <select id="editAdditionalGroups" name="additional_group_ids" class="form-select" multiple size="4">
                     </select>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="clearAdditionalGroups()" style="margin-top: 0.5rem;">
+                        Очистить все
+                    </button>
                     <small class="text-secondary" style="display: block; margin-top: 0.5rem;">
-                        💡 Студент сможет посещать эти группы бесплатно. Посещения будут списываться из основного абонемента.
-                        Для выбора нескольких групп удерживайте Ctrl (Cmd на Mac).
+                        💡 Студент сможет посещать эти группы бесплатно. Посещения будут списываться из основного абонемента.<br>
+                        <strong>Выбор:</strong> Ctrl+Click (Cmd+Click на Mac) для выбора/отмены.<br>
+                        <strong>Отменить выбор:</strong> Нажмите на выбранную группу с зажатым Ctrl (Cmd) или используйте кнопку "Очистить все".
                     </small>
                 </div>
                 <div class="form-group">
@@ -387,6 +391,14 @@
                     option.disabled = false;
                     option.textContent = option.textContent.replace(' (основная группа)', '');
                 }
+            });
+        }
+        
+        // Clear all additional groups selection
+        function clearAdditionalGroups() {
+            const additionalGroupsSelect = document.getElementById('editAdditionalGroups');
+            Array.from(additionalGroupsSelect.options).forEach(option => {
+                option.selected = false;
             });
         }
         

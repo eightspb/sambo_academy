@@ -1,11 +1,11 @@
 """Attendance API endpoints."""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, case
+from sqlalchemy import select, and_, func, or_, any_, case
+from sqlalchemy.orm import selectinload
 from typing import List
+from datetime import date, datetime, timedelta
 import uuid
-from datetime import date, timedelta
-from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 
 from app.database import get_db
@@ -419,11 +419,16 @@ async def get_attendance_by_date(
             detail="Invalid date format. Use YYYY-MM-DD"
         )
     
-    # Get all students in the group
+    # Get all students in the group (including those with this group as additional)
     students_result = await db.execute(
         select(Student).where(
-            Student.group_id == group_id,
-            Student.is_active == True
+            and_(
+                or_(
+                    Student.group_id == group_id,
+                    group_id == any_(Student.additional_group_ids)
+                ),
+                Student.is_active == True
+            )
         ).order_by(Student.full_name)
     )
     students = students_result.scalars().all()
@@ -444,13 +449,17 @@ async def get_attendance_by_date(
     result = []
     for student in students:
         attendance = attendance_map.get(str(student.id))
+        # Check if this is a bonus group (not primary group)
+        is_bonus_group = student.group_id != group_id
+        
         result.append({
             'student_id': str(student.id),
             'full_name': student.full_name,
             'birth_date': student.birth_date.isoformat(),
             'status': attendance.status.value if attendance else None,
             'attendance_id': str(attendance.id) if attendance else None,
-            'notes': attendance.notes if attendance else None
+            'notes': attendance.notes if attendance else None,
+            'is_bonus_group': is_bonus_group
         })
     
     return result

@@ -1,7 +1,7 @@
 """Students API endpoints."""
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_, any_
 from typing import List, Optional
 import uuid
 from datetime import date, timedelta
@@ -12,7 +12,7 @@ from app.models.user import User
 from app.models.student import Student
 from app.models.group import Group, AgeGroup
 from app.models.subscription import Subscription, SubscriptionType
-from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse
+from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse, StudentWithStats
 from app.core.security import get_current_user
 from app.core.permissions import check_student_access, check_group_access
 from app.constants import (
@@ -67,7 +67,13 @@ async def get_students(
     
     # Apply filters
     if group_id is not None:
-        query = query.where(Student.group_id == group_id)
+        # Include students where group_id matches OR group is in additional_group_ids
+        query = query.where(
+            or_(
+                Student.group_id == group_id,
+                group_id == any_(Student.additional_group_ids)
+            )
+        )
     
     if is_active is not None:
         query = query.where(Student.is_active == is_active)

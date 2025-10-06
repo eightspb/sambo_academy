@@ -76,6 +76,14 @@ class StudentResponse(StudentBase):
     is_active: bool
     subscription_type: Optional[str] = None
     
+    @field_validator('additional_group_ids', mode='before')
+    @classmethod
+    def validate_additional_groups(cls, v):
+        """Ensure additional_group_ids is always a list, never None."""
+        if v is None:
+            return []
+        return v
+    
     model_config = ConfigDict(from_attributes=True)
 
 
