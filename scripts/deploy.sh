@@ -12,25 +12,17 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Загрузить конфигурацию из .env если существует
+# Загрузить конфигурацию из .env
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
 fi
 
-# Парсинг SSH строки из .env
-# Формат: user@host/password&port
-if [ -z "$SSH" ]; then
-    echo -e "${RED}❌ SSH переменная не найдена в .env${NC}"
+# Проверить наличие SSH переменных
+if [ -z "$SSH_USER" ] || [ -z "$SSH_HOST" ] || [ -z "$SSH_PORT" ] || [ -z "$SSH_PASS" ]; then
+    echo -e "${RED}❌ SSH переменные не найдены в .env${NC}"
+    echo "Нужны: SSH_USER, SSH_HOST, SSH_PORT, SSH_PASS"
     exit 1
 fi
-
-# Извлечь данные из SSH строки
-SSH_USER=$(echo $SSH | cut -d'@' -f1)
-SSH_REST=$(echo $SSH | cut -d'@' -f2)
-SSH_HOST=$(echo $SSH_REST | cut -d'/' -f1)
-SSH_PASS_PORT=$(echo $SSH_REST | cut -d'/' -f2)
-SSH_PASS=$(echo $SSH_PASS_PORT | cut -d'&' -f1)
-SSH_PORT=$(echo $SSH_PASS_PORT | cut -d'&' -f2)
 
 echo -e "${BLUE}🚀 Sambo Academy - Deploy Script${NC}"
 echo "===================================="
