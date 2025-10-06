@@ -26,6 +26,7 @@ wheels/
 # Environment
 .env
 .env.local
+.env.production
 
 # IDE
 .vscode/
@@ -47,3 +48,8 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# Deployment
+backups/
+certbot/
+*.sql
