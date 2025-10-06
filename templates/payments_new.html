@@ -6,6 +6,7 @@
     <title>Платежи - Sambo Academy</title>
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
     <link rel="stylesheet" href="/static/css/payments.css">
 </head>
 <body>
@@ -50,6 +51,7 @@
         
         <!-- Students Payment List -->
         <div id="paymentsListContainer" style="display: none;">
+            <!-- Desktop: Table view -->
             <div class="card" style="overflow-x: auto;">
                 <table class="payment-table table">
                     <thead>
@@ -67,6 +69,11 @@
                         <!-- Will be filled dynamically -->
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- Mobile: Card view -->
+            <div class="mobile-cards" id="paymentsMobileCards">
+                <!-- Will be filled dynamically -->
             </div>
         </div>
         
@@ -177,6 +184,7 @@
     <script src="/static/js/components.js"></script>
     
     <script src="/static/js/app.js"></script>
+    <script src="/static/js/mobile-nav.js"></script>
     <script src="/static/js/pages/payments-new.js"></script>
 </body>
 </html>

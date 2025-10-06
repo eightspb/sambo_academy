@@ -128,7 +128,8 @@ function renderStudents() {
         return;
     }
     
-    container.innerHTML = `
+    // Desktop: Table view
+    const tableView = `
         <div class="card" style="overflow-x: auto;">
             <table class="table">
                 <thead>
@@ -192,6 +193,66 @@ function renderStudents() {
             </table>
         </div>
     `;
+    
+    // Mobile: Card view
+    const mobileView = `
+        <div class="mobile-cards">
+            ${students.map((student, index) => {
+                const group = groups.find(g => g.id === student.group_id);
+                
+                // Get additional groups
+                let additionalGroupsText = '';
+                if (student.additional_group_ids && student.additional_group_ids.length > 0) {
+                    const additionalGroupNames = student.additional_group_ids
+                        .map(id => {
+                            const g = groups.find(gr => gr.id === id);
+                            return g ? g.name : null;
+                        })
+                        .filter(name => name);
+                    
+                    if (additionalGroupNames.length > 0) {
+                        additionalGroupsText = `<br><small style="color: #ff6b6b; font-weight: 500;">
+                            🎁 Бонус: ${additionalGroupNames.join(', ')}
+                        </small>`;
+                    }
+                }
+                
+                return `
+                    <div class="mobile-card">
+                        <div class="mobile-card-header">
+                            ${index + 1}. ${student.full_name}
+                            <span class="badge ${student.is_active ? 'badge-success' : 'badge-danger'}" style="margin-left: 0.5rem; font-size: 0.75rem;">
+                                ${student.is_active ? 'Активен' : 'Неактивен'}
+                            </span>
+                        </div>
+                        <div class="mobile-card-row">
+                            <span class="mobile-card-label">Дата рождения:</span>
+                            <span class="mobile-card-value">${dateUtils.formatDate(student.birth_date)}</span>
+                        </div>
+                        <div class="mobile-card-row">
+                            <span class="mobile-card-label">Телефон:</span>
+                            <span class="mobile-card-value">${student.phone}</span>
+                        </div>
+                        <div class="mobile-card-row">
+                            <span class="mobile-card-label">Группа:</span>
+                            <span class="mobile-card-value">${group ? group.name : '-'}${additionalGroupsText}</span>
+                        </div>
+                        <div class="mobile-card-actions">
+                            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal('${student.id}')">
+                                Редактировать
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteStudent('${student.id}')">
+                                Удалить
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+    
+    // Render both views (CSS will show/hide based on screen size)
+    container.innerHTML = tableView + mobileView;
 }
 
 function openCreateStudentModal() {

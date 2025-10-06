@@ -105,6 +105,12 @@ async def statistics_page():
     return FileResponse("templates/statistics.html")
 
 
+@app.get("/test-unpaid")
+async def test_unpaid_page():
+    """Serve test page for unpaid students API."""
+    return FileResponse("test_unpaid_api.html")
+
+
 @app.get("/tournaments")
 async def tournaments_page():
     """Serve the tournaments page."""
