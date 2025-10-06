@@ -1,10 +1,10 @@
 """Student model."""
 import uuid
 from datetime import date, datetime
-from sqlalchemy import Boolean, String, Date, DateTime, Text, ForeignKey
+from sqlalchemy import Boolean, String, Date, DateTime, Text, ForeignKey, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import Optional
+from typing import Optional, List
 from app.database import Base
 
 
@@ -27,6 +27,11 @@ class Student(Base):
         ForeignKey("groups.id", ondelete="CASCADE"),
         nullable=False,
         index=True
+    )
+    additional_group_ids: Mapped[Optional[List[uuid.UUID]]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)),
+        nullable=True,
+        default=[]
     )
     trainer_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

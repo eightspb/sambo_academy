@@ -1,21 +1,54 @@
 """Students API endpoints."""
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select
 from typing import List, Optional
 import uuid
+from datetime import date, timedelta
+from decimal import Decimal
 
 from app.database import get_db
 from app.models.user import User
 from app.models.student import Student
-from app.models.attendance import Attendance
-from app.models.tournament import TournamentParticipation
+from app.models.group import Group, AgeGroup
 from app.models.subscription import Subscription, SubscriptionType
-from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse, StudentWithStats
+from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse
 from app.core.security import get_current_user
 from app.core.permissions import check_student_access, check_group_access
+from app.constants import (
+    DEFAULT_SUBSCRIPTION_8_SENIOR_PRICE,
+    DEFAULT_SUBSCRIPTION_12_SENIOR_PRICE,
+    DEFAULT_SUBSCRIPTION_8_JUNIOR_PRICE,
+    DEFAULT_SUBSCRIPTION_12_JUNIOR_PRICE
+)
 
 router = APIRouter(prefix="/api/students", tags=["students"])
+
+
+def get_subscription_params(subscription_type: SubscriptionType, age_group: AgeGroup):
+    """Get subscription parameters based on type and age group."""
+    if subscription_type == SubscriptionType.EIGHT_SESSIONS:
+        total_sessions = 8
+        if age_group == AgeGroup.SENIOR:
+            price = Decimal(str(DEFAULT_SUBSCRIPTION_8_SENIOR_PRICE))
+        else:
+            price = Decimal(str(DEFAULT_SUBSCRIPTION_8_JUNIOR_PRICE))
+    else:  # TWELVE_SESSIONS
+        total_sessions = 12
+        if age_group == AgeGroup.SENIOR:
+            price = Decimal(str(DEFAULT_SUBSCRIPTION_12_SENIOR_PRICE))
+        else:
+            price = Decimal(str(DEFAULT_SUBSCRIPTION_12_JUNIOR_PRICE))
+    
+    # Expiry date: 2 months from start date
+    expiry_date = date.today() + timedelta(days=60)
+    
+    return {
+        'total_sessions': total_sessions,
+        'remaining_sessions': total_sessions,
+        'price': price,
+        'expiry_date': expiry_date
+    }
 
 
 @router.get("", response_model=List[StudentResponse])
@@ -90,12 +123,24 @@ async def create_student(
     
     # Создаем абонемент если указан тип
     if subscription_type:
-        from datetime import date
+        # Получаем группу для определения возрастной категории
+        group_result = await db.execute(
+            select(Group).where(Group.id == new_student.group_id)
+        )
+        group = group_result.scalar_one()
+        
+        # Получаем параметры абонемента
+        subscription_params = get_subscription_params(
+            SubscriptionType(subscription_type),
+            group.age_group
+        )
+        
         new_subscription = Subscription(
             student_id=new_student.id,
             subscription_type=SubscriptionType(subscription_type),
             start_date=date.today(),
-            is_active=True
+            is_active=True,
+            **subscription_params  # total_sessions, remaining_sessions, price, expiry_date
         )
         db.add(new_subscription)
         await db.commit()

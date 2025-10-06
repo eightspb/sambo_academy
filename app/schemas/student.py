@@ -1,6 +1,6 @@
 """Student schemas for API validation."""
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import date
 import uuid
 
@@ -33,6 +33,7 @@ class StudentBase(BaseModel):
 class StudentCreate(StudentBase):
     """Schema for student creation."""
     group_id: uuid.UUID
+    additional_group_ids: Optional[List[uuid.UUID]] = Field(default_factory=list)
     subscription_type: Optional[str] = Field(None, pattern="^(8_sessions|12_sessions)$")
 
 
@@ -43,6 +44,7 @@ class StudentUpdate(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     email: Optional[Union[EmailStr, str]] = None
     group_id: Optional[uuid.UUID] = None
+    additional_group_ids: Optional[List[uuid.UUID]] = None
     subscription_type: Optional[str] = Field(None, pattern="^(8_sessions|12_sessions)$")
     is_active: Optional[bool] = None
     notes: Optional[str] = None
@@ -68,6 +70,7 @@ class StudentResponse(StudentBase):
     """Schema for student response."""
     id: uuid.UUID
     group_id: uuid.UUID
+    additional_group_ids: Optional[List[uuid.UUID]] = Field(default_factory=list)
     trainer_id: uuid.UUID
     registration_date: date
     is_active: bool

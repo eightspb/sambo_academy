@@ -57,16 +57,22 @@ async def mark_attendance(
         status_value = attendance_item.get("status")  # Может быть None
         notes = attendance_item.get("notes")
         
-        # Verify student belongs to group
+        # Verify student belongs to group (primary or additional)
         result = await db.execute(
-            select(Student).where(
-                Student.id == student_id,
-                Student.group_id == attendance_data.group_id
-            )
+            select(Student).where(Student.id == student_id)
         )
         student = result.scalar_one_or_none()
         
         if not student:
+            continue
+        
+        # Check if student belongs to this group (primary or additional)
+        belongs_to_group = (
+            student.group_id == attendance_data.group_id or
+            (student.additional_group_ids and attendance_data.group_id in student.additional_group_ids)
+        )
+        
+        if not belongs_to_group:
             continue
         
         # Check if attendance already exists for this student/group/date
