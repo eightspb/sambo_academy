@@ -15,27 +15,16 @@
     <link rel="icon" type="image/png" sizes="144x144" href="/static/icons/sa_logo_blue-144.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/sa_logo_blue-512.png">
     
+    {% block manifest %}
     <link rel="manifest" href="/static/manifest.json">
+    {% endblock %}
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="/static/css/mobile.css">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Header Component -->
-    <div id="app-header"></div>
+    {% block content %}{% endblock %}
     
-    <!-- Navigation Component -->
-    <div id="app-nav"></div>
-    
-    <!-- Page Content -->
-    <main class="container">
-        {% block content %}{% endblock %}
-    </main>
-    
-    <!-- Scripts -->
-    <script src="/static/js/components.js"></script>
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/mobile-nav.js"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

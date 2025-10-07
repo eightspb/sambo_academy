@@ -1,14 +1,14 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Нет соединения - Sambo Academy</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="/static/css/mobile.css">
-    <link rel="stylesheet" href="/static/css/offline.css">
-</head>
-<body>
+{% extends "base_simple.html" %}
+
+{% block title %}Нет соединения - Sambo Academy{% endblock %}
+
+{% block manifest %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/offline.css">
+{% endblock %}
+
+{% block content %}
     <div class="offline-container">
         <div class="offline-icon">📡</div>
         <h1 class="offline-title">Нет соединения с интернетом</h1>
@@ -19,5 +19,4 @@
             Повторить попытку
         </button>
     </div>
-</body>
-</html>
+{% endblock %}

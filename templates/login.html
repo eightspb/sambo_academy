@@ -1,17 +1,17 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "base_simple.html" %}
+
+{% block meta %}
     <meta name="description" content="Sambo Academy - Вход в систему">
     <meta name="theme-color" content="#2563eb">
-    <title>Вход - Sambo Academy</title>
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="/static/css/mobile.css">
-    <link rel="stylesheet" href="/static/css/login.css">
-</head>
-<body>
+{% endblock %}
+
+{% block title %}Вход - Sambo Academy{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/login.css">
+{% endblock %}
+
+{% block content %}
     <div class="login-container">
         <div class="card login-card">
             <div class="login-header">
@@ -53,8 +53,9 @@
             </div>
         </div>
     </div>
-    
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/pages/login.js"></script>
-</body>
-</html>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/app.js"></script>
+<script src="/static/js/pages/login.js"></script>
+{% endblock %}

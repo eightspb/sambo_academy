@@ -27,7 +27,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/static/icons/icon-144x144.png",
+      "src": "/static/icons/sa_logo_blue-144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any maskable"
@@ -51,7 +51,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/static/icons/icon-512x512.png",
+      "src": "/static/icons/sa_logo_blue-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

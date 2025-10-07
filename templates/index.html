@@ -1,55 +1,42 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "base.html" %}
+
+{% block meta %}
     <meta name="description" content="Sambo Academy - Главная страница">
     <meta name="theme-color" content="#2563eb">
-    <title>Главная - Sambo Academy</title>
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="/static/css/mobile.css">
-</head>
-<body>
-    <!-- Header Component -->
-    <div id="app-header"></div>
-    
-    <!-- Navigation Component -->
-    <div id="app-nav"></div>
-    
-    <main class="container">
-        <h1 style="margin-bottom: 2rem;">Панель управления</h1>
-        
+{% endblock %}
 
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Мои группы</h2>
-            </div>
-            <div id="groupsList">
-                <div class="spinner"></div>
-            </div>
-        </div>
-        <div class="grid grid-3">
-            <div class="stat-card">
-                <div class="stat-value" id="totalGroups">0</div>
-                <div class="stat-label">Всего групп</div>
-            </div>
-            
-            <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-                <div class="stat-value" id="totalStudents">0</div>
-                <div class="stat-label">Всего учеников</div>
-            </div>
-            
-            <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                <div class="stat-value" id="activeStudents">0</div>
-                <div class="stat-label">Активных учеников</div>
-            </div>
-        </div>
-    </main>
+{% block title %}Главная - Sambo Academy{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem;">Панель управления</h1>
+
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Мои группы</h2>
+    </div>
+    <div id="groupsList">
+        <div class="spinner"></div>
+    </div>
+</div>
+<div class="grid grid-3">
+    <div class="stat-card">
+        <div class="stat-value" id="totalGroups">0</div>
+        <div class="stat-label">Всего групп</div>
+    </div>
     
-    <script src="/static/js/components.js"></script>
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/mobile-nav.js"></script>
-    <script src="/static/js/pages/index.js"></script>
-</body>
-</html>
+    <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+        <div class="stat-value" id="totalStudents">0</div>
+        <div class="stat-label">Всего учеников</div>
+    </div>
+    
+    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+        <div class="stat-value" id="activeStudents">0</div>
+        <div class="stat-label">Активных учеников</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/pages/index.js"></script>
+{% endblock %}

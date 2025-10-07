@@ -1,21 +1,8 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Группы - Sambo Academy</title>
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="/static/css/mobile.css">
-</head>
-<body>
-    <!-- Header Component -->
-    <div id="app-header"></div>
-    
-    <!-- Navigation Component -->
-    <div id="app-nav"></div>
-    
-    <main class="container">
+{% extends "base.html" %}
+
+{% block title %}Группы - Sambo Academy{% endblock %}
+
+{% block content %}
         <h1 class="mb-2">Мои группы</h1>
         
         <div style="text-align: right;" class="mb-2">
@@ -25,9 +12,8 @@
         <div id="groupsList">
             <div class="spinner"></div>
         </div>
-    </main>
-    
-    <!-- Create Group Modal -->
+
+<!-- Create Group Modal -->
     <div id="createGroupModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -127,9 +113,8 @@
             </form>
         </div>
     </div>
-    <script src="/static/js/components.js"></script>
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/mobile-nav.js"></script>
-    <script src="/static/js/pages/groups.js"></script>
-</body>
-</html>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/pages/groups.js"></script>
+{% endblock %}

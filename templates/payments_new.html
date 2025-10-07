@@ -1,22 +1,12 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Платежи - Sambo Academy</title>
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="/static/css/mobile.css">
-    <link rel="stylesheet" href="/static/css/payments.css">
-</head>
-<body>
-    <!-- Header Component -->
-    <div id="app-header"></div>
-    
-    <!-- Navigation Component -->
-    <div id="app-nav"></div>
-    
-    <main class="container">
+{% extends "base.html" %}
+
+{% block title %}Платежи - Sambo Academy{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/payments.css">
+{% endblock %}
+
+{% block content %}
         <h1 class="mb-2">Платежи за абонементы</h1>
         
         <!-- Filters -->
@@ -80,9 +70,8 @@
         <div id="noDataMessage" class="card" style="display: none;">
             <p class="text-secondary">Выберите месяц и группу для отображения учеников</p>
         </div>
-    </main>
-    
-    <!-- Payment Details Modal -->
+
+<!-- Payment Details Modal -->
     <div id="paymentDetailsModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -181,10 +170,8 @@
             </form>
         </div>
     </div>
-    <script src="/static/js/components.js"></script>
-    
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/mobile-nav.js"></script>
-    <script src="/static/js/pages/payments-new.js"></script>
-</body>
-</html>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/pages/payments-new.js"></script>
+{% endblock %}

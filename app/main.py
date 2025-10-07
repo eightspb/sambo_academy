@@ -57,52 +57,55 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Mount templates for component loading
 app.mount("/templates", StaticFiles(directory="templates"), name="templates")
 
+# Initialize Jinja2 templates
+templates = Jinja2Templates(directory="templates")
+
 # Serve templates
 @app.get("/")
-async def root():
+async def root(request: Request):
     """Serve the main page."""
-    return FileResponse("templates/index.html")
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/login")
-async def login_page():
+async def login_page(request: Request):
     """Serve the login page."""
-    return FileResponse("templates/login.html")
+    return templates.TemplateResponse("login.html", {"request": request})
 
 
 @app.get("/groups")
-async def groups_page():
+async def groups_page(request: Request):
     """Serve the groups page."""
-    return FileResponse("templates/groups.html")
+    return templates.TemplateResponse("groups.html", {"request": request})
 
 
 @app.get("/students")
-async def students_page():
+async def students_page(request: Request):
     """Serve the students page."""
-    return FileResponse("templates/students.html")
+    return templates.TemplateResponse("students.html", {"request": request})
 
 
 @app.get("/attendance")
-async def attendance_page():
+async def attendance_page(request: Request):
     """Serve the attendance page."""
-    return FileResponse("templates/attendance.html")
+    return templates.TemplateResponse("attendance.html", {"request": request})
 
 
 @app.get("/payments")
-async def payments_page():
+async def payments_page(request: Request):
     """Serve the new payments page."""
-    return FileResponse("templates/payments_new.html")
+    return templates.TemplateResponse("payments_new.html", {"request": request})
 
 @app.get("/payments-old")
-async def payments_old_page():
+async def payments_old_page(request: Request):
     """Serve the old payments page (backup)."""
-    return FileResponse("templates/payments.html")
+    return templates.TemplateResponse("payments.html", {"request": request})
 
 
 @app.get("/statistics")
-async def statistics_page():
+async def statistics_page(request: Request):
     """Serve the statistics page."""
-    return FileResponse("templates/statistics.html")
+    return templates.TemplateResponse("statistics.html", {"request": request})
 
 
 @app.get("/test-unpaid")
@@ -112,15 +115,15 @@ async def test_unpaid_page():
 
 
 @app.get("/tournaments")
-async def tournaments_page():
+async def tournaments_page(request: Request):
     """Serve the tournaments page."""
-    return FileResponse("templates/tournaments.html")
+    return templates.TemplateResponse("tournaments.html", {"request": request})
 
 
 @app.get("/settings")
-async def settings_page():
+async def settings_page(request: Request):
     """Serve the settings page."""
-    return FileResponse("templates/settings.html")
+    return templates.TemplateResponse("settings.html", {"request": request})
 
 
 @app.get("/health")
