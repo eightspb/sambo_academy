@@ -282,29 +282,45 @@ async function quickStandardPayment(studentId, studentName) {
     const subscriptionType = '8_sessions';
     const [year, month] = currentMonth.split('-');
     
-    // Create subscription
-    const subscriptionData = {
-        student_id: studentId,
-        subscription_type: subscriptionType,
-        price: standardPrice,
-        start_date: `${year}-${month}-01`
-    };
-    
-    // Create payment
-    const paymentData = {
-        student_id: studentId,
-        amount: standardPrice,
-        payment_type: 'full',
-        payment_date: new Date().toISOString().split('T')[0],
-        payment_month: `${year}-${month}-01`,
-        status: 'paid',
-        notes: 'Стандартная оплата'
-    };
-    
     try {
         ui.showLoading();
         
-        await api.post('/subscriptions', subscriptionData);
+        // Check if student has active subscription
+        let subscriptionId = null;
+        try {
+            const subscriptions = await api.get(`/subscriptions/student/${studentId}`);
+            const activeSubscription = subscriptions.find(s => s.is_active === true);
+            if (activeSubscription) {
+                subscriptionId = activeSubscription.id;
+            }
+        } catch (e) {
+            console.log('No active subscription found, will create new one');
+        }
+        
+        // Create subscription only if doesn't exist
+        if (!subscriptionId) {
+            const subscriptionData = {
+                student_id: studentId,
+                subscription_type: subscriptionType,
+                price: standardPrice,
+                start_date: `${year}-${month}-01`
+            };
+            const newSubscription = await api.post('/subscriptions', subscriptionData);
+            subscriptionId = newSubscription.id;
+        }
+        
+        // Create payment
+        const paymentData = {
+            student_id: studentId,
+            subscription_id: subscriptionId,
+            amount: standardPrice,
+            payment_type: 'full',
+            payment_date: new Date().toISOString().split('T')[0],
+            payment_month: `${year}-${month}-01`,
+            status: 'paid',
+            notes: 'Стандартная оплата'
+        };
+        
         await api.post('/payments', paymentData);
         
         ui.hideLoading();
@@ -381,29 +397,45 @@ document.getElementById('paymentForm').addEventListener('submit', async (e) => {
     const notes = document.getElementById('paymentNotes').value;
     const [year, month] = currentMonth.split('-');
     
-    // Create subscription first
-    const subscriptionData = {
-        student_id: studentId,
-        subscription_type: subscriptionType,
-        price: amount,
-        start_date: `${year}-${month}-01`
-    };
-    
-    // Create payment
-    const paymentData = {
-        student_id: studentId,
-        amount: amount,
-        payment_type: 'full',
-        payment_date: new Date().toISOString().split('T')[0],
-        payment_month: `${year}-${month}-01`,
-        status: 'paid',
-        notes: notes || 'Нестандартная оплата'
-    };
-    
     try {
         ui.showLoading();
         
-        await api.post('/subscriptions', subscriptionData);
+        // Check if student has active subscription
+        let subscriptionId = null;
+        try {
+            const subscriptions = await api.get(`/subscriptions/student/${studentId}`);
+            const activeSubscription = subscriptions.find(s => s.is_active === true);
+            if (activeSubscription) {
+                subscriptionId = activeSubscription.id;
+            }
+        } catch (e) {
+            console.log('No active subscription found, will create new one');
+        }
+        
+        // Create subscription only if doesn't exist
+        if (!subscriptionId) {
+            const subscriptionData = {
+                student_id: studentId,
+                subscription_type: subscriptionType,
+                price: amount,
+                start_date: `${year}-${month}-01`
+            };
+            const newSubscription = await api.post('/subscriptions', subscriptionData);
+            subscriptionId = newSubscription.id;
+        }
+        
+        // Create payment
+        const paymentData = {
+            student_id: studentId,
+            subscription_id: subscriptionId,
+            amount: amount,
+            payment_type: 'full',
+            payment_date: new Date().toISOString().split('T')[0],
+            payment_month: `${year}-${month}-01`,
+            status: 'paid',
+            notes: notes || 'Нестандартная оплата'
+        };
+        
         await api.post('/payments', paymentData);
         
         ui.hideLoading();
