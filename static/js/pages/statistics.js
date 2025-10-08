@@ -533,39 +533,43 @@ function renderGroupDetail(container, data) {
     const trainingDays = data.students[0]?.attendance || [];
     
     container.innerHTML = `
-        <h3 style="margin-bottom: 1rem;">${data.group_name} - Календарь посещаемости</h3>
-        <div style="overflow-x: auto;">
-            <table class="table" style="font-size: 0.9rem;">
+        <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">${data.group_name} - Календарь посещаемости</h3>
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; background: white;">
                 <thead>
-                    <tr>
-                        <th style="position: sticky; left: 0; background: white; z-index: 10; min-width: 150px;">Ученик</th>
+                    <tr style="background: var(--bg-color); border-bottom: 2px solid var(--border-color);">
+                        <th style="position: sticky; left: 0; background: var(--bg-color); z-index: 10; min-width: 120px; padding: 0.5rem; text-align: left; border-right: 1px solid var(--border-color);">Ученик</th>
                         ${trainingDays.map(d => `
-                            <th style="text-align: center; padding: 0.5rem; min-width: 40px;">${d.day}</th>
+                            <th style="text-align: center; padding: 0.5rem; min-width: 35px; border-left: 1px solid var(--border-color);">${d.day}</th>
                         `).join('')}
                     </tr>
                 </thead>
                 <tbody>
                     ${data.students.map(student => `
-                        <tr>
-                            <td style="position: sticky; left: 0; background: white; z-index: 10; font-weight: 500;">${student.full_name}</td>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="position: sticky; left: 0; background: white; z-index: 9; font-weight: 500; padding: 0.5rem; border-right: 1px solid var(--border-color); font-size: 0.8rem;">${student.full_name}</td>
                             ${student.attendance.map(att => {
                                 let bgColor = '#fff';
+                                let symbol = '';
                                 let title = 'Нет данных';
                                 
                                 if (att.status === 'present') {
-                                    bgColor = '#d1fae5'; // Light green
+                                    bgColor = '#d1fae5';
+                                    symbol = '✓';
                                     title = 'Присутствовал';
                                 } else if (att.status === 'absent') {
-                                    bgColor = '#fee2e2'; // Light red
+                                    bgColor = '#fee2e2';
+                                    symbol = '✗';
                                     title = 'Отсутствовал';
                                 } else if (att.status === 'transferred') {
-                                    bgColor = '#fef3c7'; // Light yellow
+                                    bgColor = '#fef3c7';
+                                    symbol = '↻';
                                     title = 'Перенос';
                                 }
                                 
                                 return `
-                                    <td style="background: ${bgColor}; text-align: center; padding: 0.5rem;" title="${title}">
-                                        ${att.status === 'present' ? '✓' : att.status === 'absent' ? '✗' : att.status === 'transferred' ? '↻' : ''}
+                                    <td style="background: ${bgColor}; text-align: center; padding: 0.5rem; border-left: 1px solid #ddd;" title="${title}">
+                                        ${symbol}
                                     </td>
                                 `;
                             }).join('')}
@@ -574,11 +578,23 @@ function renderGroupDetail(container, data) {
                 </tbody>
             </table>
         </div>
-        <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.9rem;">
-            <div><span style="display: inline-block; width: 20px; height: 20px; background: #d1fae5; border: 1px solid #ccc; vertical-align: middle;"></span> Присутствовал</div>
-            <div><span style="display: inline-block; width: 20px; height: 20px; background: #fee2e2; border: 1px solid #ccc; vertical-align: middle;"></span> Отсутствовал</div>
-            <div><span style="display: inline-block; width: 20px; height: 20px; background: #fef3c7; border: 1px solid #ccc; vertical-align: middle;"></span> Перенос</div>
-            <div><span style="display: inline-block; width: 20px; height: 20px; background: #fff; border: 1px solid #ccc; vertical-align: middle;"></span> Нет данных</div>
+        <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                <span style="display: inline-block; width: 18px; height: 18px; background: #d1fae5; border: 1px solid #ccc;"></span>
+                <span>Присутствовал</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                <span style="display: inline-block; width: 18px; height: 18px; background: #fee2e2; border: 1px solid #ccc;"></span>
+                <span>Отсутствовал</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                <span style="display: inline-block; width: 18px; height: 18px; background: #fef3c7; border: 1px solid #ccc;"></span>
+                <span>Перенос</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                <span style="display: inline-block; width: 18px; height: 18px; background: #fff; border: 1px solid #ccc;"></span>
+                <span>Нет данных</span>
+            </div>
         </div>
     `;
 }
