@@ -147,7 +147,7 @@ class TestAttendanceMarking:
         attendance = Attendance(
             student_id=test_student.id,
             group_id=test_group.id,
-            session_date=date(2025, 10, 09),
+            session_date=date(2025, 10, 9),
             status=AttendanceStatus.PRESENT,
             marked_by=user.id
         )
