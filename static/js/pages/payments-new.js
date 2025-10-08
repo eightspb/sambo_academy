@@ -274,12 +274,21 @@ async function quickStandardPayment(studentId, studentName) {
     const group = groups.find(g => g.id === currentGroupId);
     const ageGroup = group.age_group;
     
-    // Calculate standard price for 8 sessions
-    const standardPrice = ageGroup === 'senior' 
-        ? subscriptionPrices.subscription_8_senior_price 
-        : subscriptionPrices.subscription_8_junior_price;
+    // Use group's default subscription type
+    const subscriptionType = group.default_subscription_type || '8_sessions';
     
-    const subscriptionType = '8_sessions';
+    // Calculate standard price based on subscription type and age group
+    let standardPrice;
+    if (subscriptionType === '12_sessions') {
+        standardPrice = ageGroup === 'senior' 
+            ? subscriptionPrices.subscription_12_senior_price 
+            : subscriptionPrices.subscription_12_junior_price;
+    } else {
+        standardPrice = ageGroup === 'senior' 
+            ? subscriptionPrices.subscription_8_senior_price 
+            : subscriptionPrices.subscription_8_junior_price;
+    }
+    
     const [year, month] = currentMonth.split('-');
     
     try {
