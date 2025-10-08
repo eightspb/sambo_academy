@@ -273,22 +273,6 @@ async function quickStandardPayment(studentId, studentName) {
     
     const group = groups.find(g => g.id === currentGroupId);
     const ageGroup = group.age_group;
-    
-    // Use group's default subscription type
-    const subscriptionType = group.default_subscription_type || '8_sessions';
-    
-    // Calculate standard price based on subscription type and age group
-    let standardPrice;
-    if (subscriptionType === '12_sessions') {
-        standardPrice = ageGroup === 'senior' 
-            ? subscriptionPrices.subscription_12_senior_price 
-            : subscriptionPrices.subscription_12_junior_price;
-    } else {
-        standardPrice = ageGroup === 'senior' 
-            ? subscriptionPrices.subscription_8_senior_price 
-            : subscriptionPrices.subscription_8_junior_price;
-    }
-    
     const [year, month] = currentMonth.split('-');
     
     try {
@@ -296,14 +280,30 @@ async function quickStandardPayment(studentId, studentName) {
         
         // Check if student has active subscription
         let subscriptionId = null;
+        let subscriptionType = group.default_subscription_type || '8_sessions';
+        
         try {
             const subscriptions = await api.get(`/subscriptions/student/${studentId}`);
             const activeSubscription = subscriptions.find(s => s.is_active === true);
             if (activeSubscription) {
                 subscriptionId = activeSubscription.id;
+                // Use student's existing subscription type
+                subscriptionType = activeSubscription.subscription_type;
             }
         } catch (e) {
             console.log('No active subscription found, will create new one');
+        }
+        
+        // Calculate standard price based on subscription type and age group
+        let standardPrice;
+        if (subscriptionType === '12_sessions') {
+            standardPrice = ageGroup === 'senior' 
+                ? subscriptionPrices.subscription_12_senior_price 
+                : subscriptionPrices.subscription_12_junior_price;
+        } else {
+            standardPrice = ageGroup === 'senior' 
+                ? subscriptionPrices.subscription_8_senior_price 
+                : subscriptionPrices.subscription_8_junior_price;
         }
         
         // Create subscription only if doesn't exist
@@ -570,23 +570,15 @@ async function updatePayment() {
 async function cancelPayment() {
     if (!currentPaymentId) return;
     
-    if (!ui.confirm('Вы уверены, что хотите отменить эту оплату? Это действие удалит оплату и абонемент.')) {
+    if (!ui.confirm('Вы уверены, что хотите отменить эту оплату? Это действие удалит только оплату, абонемент останется.')) {
         return;
     }
     
     try {
         ui.showLoading();
         
-        // Delete subscription first (if exists)
-        if (currentSubscriptionId) {
-            try {
-                await api.delete(`/subscriptions/${currentSubscriptionId}`);
-            } catch (e) {
-                console.error('Error deleting subscription:', e);
-            }
-        }
-        
-        // Delete payment
+        // Only delete payment, keep subscription
+        // Subscription should remain with the student to preserve their subscription type
         await api.delete(`/payments/${currentPaymentId}`);
         
         ui.hideLoading();
