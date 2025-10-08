@@ -374,6 +374,7 @@ document.getElementById('editStudentForm').addEventListener('submit', async (e) 
         email: formData.get('email') || null,
         group_id: formData.get('group_id'),
         additional_group_ids: additionalGroupIds,
+        subscription_type: formData.get('subscription_type'),
         is_active: formData.get('is_active') === 'true',
         notes: formData.get('notes') || null
     };

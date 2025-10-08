@@ -224,11 +224,25 @@ async def update_student(
         for old_sub in old_subs_result.scalars():
             old_sub.is_active = False
         
+        # Получаем группу студента для определения возрастной категории
+        group_result = await db.execute(select(Group).where(Group.id == student.group_id))
+        group = group_result.scalar_one_or_none()
+        
+        # Получаем параметры абонемента
+        sub_params = get_subscription_params(
+            SubscriptionType(subscription_type),
+            group.age_group if group else AgeGroup.SENIOR
+        )
+        
         # Создаем новый абонемент
         new_subscription = Subscription(
             student_id=student_id,
             subscription_type=SubscriptionType(subscription_type),
+            total_sessions=sub_params['total_sessions'],
+            remaining_sessions=sub_params['remaining_sessions'],
+            price=sub_params['price'],
             start_date=date.today(),
+            expiry_date=sub_params['expiry_date'],
             is_active=True
         )
         db.add(new_subscription)
