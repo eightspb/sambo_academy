@@ -81,6 +81,7 @@ async function loadCurrentTabData() {
     } else if (currentTab === 'payments') {
         await loadPaymentStats();
     } else if (currentTab === 'unpaid') {
+        selectedGroupFilter = 'all'; // Reset filter when switching to unpaid tab
         await loadUnpaidStudents();
     }
 }
@@ -360,26 +361,60 @@ function renderPaymentStats(stats, year) {
     `;
 }
 
+// Global variable to store current unpaid data
+let currentUnpaidData = null;
+let selectedGroupFilter = 'all';
+
 function renderUnpaidStudents(data) {
     console.log('Rendering unpaid students:', data);
+    currentUnpaidData = data;
     const container = document.getElementById('unpaidContent');
     const monthName = monthNames[data.month - 1];
     
     console.log('Container:', container, 'Month:', monthName);
     
+    // Get unique groups
+    const groups = [...new Set(data.students.map(s => s.group_name))].sort();
+    
+    // Filter students based on selected group
+    const filteredStudents = selectedGroupFilter === 'all' 
+        ? data.students 
+        : data.students.filter(s => s.group_name === selectedGroupFilter);
+    
     container.innerHTML = `
         <!-- Summary -->
         <div class="grid grid-3 mb-2">
             <div class="stat-card" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-                <div class="stat-value">${data.total_unpaid}</div>
+                <div class="stat-value">${filteredStudents.length}</div>
                 <div class="stat-label">Не оплатили за ${monthName}</div>
+            </div>
+        </div>
+        
+        <!-- Group Filter -->
+        <div class="card mb-2">
+            <h3 class="mb-1">🏫 Фильтр по группам</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                <button 
+                    class="btn ${selectedGroupFilter === 'all' ? 'btn-primary' : 'btn-outline'}" 
+                    onclick="filterUnpaidByGroup('all')"
+                >
+                    Все группы (${data.students.length})
+                </button>
+                ${groups.map(group => `
+                    <button 
+                        class="btn ${selectedGroupFilter === group ? 'btn-primary' : 'btn-outline'}" 
+                        onclick="filterUnpaidByGroup('${group.replace(/'/g, "\\'")}')"
+                    >
+                        ${group} (${data.students.filter(s => s.group_name === group).length})
+                    </button>
+                `).join('')}
             </div>
         </div>
         
         <!-- Desktop: Students List Table -->
         <div class="card">
             <h2 class="card-title mb-2">Список неоплативших учеников</h2>
-            ${data.students.length === 0 ? 
+            ${filteredStudents.length === 0 ? 
                 '<p class="text-success">✅ Все ученики оплатили абонемент за выбранный месяц!</p>' 
                 : `
                 <table class="table">
@@ -394,7 +429,7 @@ function renderUnpaidStudents(data) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${data.students.map((student, index) => `
+                        ${filteredStudents.map((student, index) => `
                             <tr>
                                 <td>${index + 1}</td>
                                 <td><strong>${student.full_name}</strong></td>
@@ -412,10 +447,10 @@ function renderUnpaidStudents(data) {
         </div>
         
         <!-- Mobile: Students List Cards -->
-        ${data.students.length > 0 ? `
+        ${filteredStudents.length > 0 ? `
         <div class="mobile-cards">
             <h2 class="card-title mb-2" style="padding: 0 1rem;">Список неоплативших учеников</h2>
-            ${data.students.map((student, index) => `
+            ${filteredStudents.map((student, index) => `
                 <div class="mobile-card" style="border-left: 3px solid #dc2626;">
                     <div class="mobile-card-header">
                         ${index + 1}. ${student.full_name}
@@ -441,6 +476,13 @@ function renderUnpaidStudents(data) {
         </div>
         ` : ''}
     `;
+}
+
+function filterUnpaidByGroup(groupName) {
+    selectedGroupFilter = groupName;
+    if (currentUnpaidData) {
+        renderUnpaidStudents(currentUnpaidData);
+    }
 }
 
 
