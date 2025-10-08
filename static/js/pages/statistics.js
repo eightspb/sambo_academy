@@ -225,9 +225,9 @@ function renderAttendanceStats(stats) {
                         <span class="mobile-card-label">Перенос:</span>
                         <span class="mobile-card-value"><span class="badge badge-warning">${g.transferred}</span></span>
                     </div>
-                    <button class="btn btn-outline" onclick="toggleGroupDetailMobile('${g.group_id}', '${g.group_name.replace(/'/g, "\\'")}')" 
+                    <button class="btn btn-outline" id="btn-mobile-${g.group_id}" onclick="toggleGroupDetailMobile('${g.group_id}', '${g.group_name.replace(/'/g, "\\'")}')" 
                             style="width: 100%; margin-top: 0.5rem;">
-                        Календарь посещаемости
+                        <span id="btn-icon-mobile-${g.group_id}">▼</span> Показать календарь
                     </button>
                     <div id="detail-content-mobile-${g.group_id}" style="display: none; margin-top: 1rem;"></div>
                 </div>
@@ -473,16 +473,22 @@ async function toggleGroupDetail(groupId, groupName) {
 async function toggleGroupDetailMobile(groupId, groupName) {
     const contentDiv = document.getElementById(`detail-content-mobile-${groupId}`);
     const toggleIcon = document.getElementById(`toggle-icon-mobile-${groupId}`);
+    const btnIcon = document.getElementById(`btn-icon-mobile-${groupId}`);
+    const btn = document.getElementById(`btn-mobile-${groupId}`);
     
     if (expandedGroups.has(`mobile-${groupId}`)) {
         // Close detail
         contentDiv.style.display = 'none';
-        toggleIcon.textContent = '▶';
+        if (toggleIcon) toggleIcon.textContent = '▶';
+        if (btnIcon) btnIcon.textContent = '▼';
+        if (btn) btn.innerHTML = `<span id="btn-icon-mobile-${groupId}">▼</span> Показать календарь`;
         expandedGroups.delete(`mobile-${groupId}`);
     } else {
         // Open detail
         contentDiv.style.display = 'block';
-        toggleIcon.textContent = '▼';
+        if (toggleIcon) toggleIcon.textContent = '▼';
+        if (btnIcon) btnIcon.textContent = '▲';
+        if (btn) btn.innerHTML = `<span id="btn-icon-mobile-${groupId}">▲</span> Скрыть календарь`;
         expandedGroups.add(`mobile-${groupId}`);
         
         // Load detail data if not loaded yet
