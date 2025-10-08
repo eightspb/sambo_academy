@@ -15,7 +15,7 @@ from app.models.attendance import Attendance, AttendanceStatus
 from app.models.student import Student
 from app.models.subscription import Subscription, SubscriptionType
 from app.models.group import Group
-from app.models.payment import Payment
+from app.models.payment import Payment, PaymentType, PaymentStatus
 from app.models.settings import Settings
 from app.constants import (
     SETTING_KEY_SUBSCRIPTION_8_SENIOR,
@@ -181,12 +181,12 @@ async def mark_attendance(
                         # Create payment for next month
                         payment = Payment(
                             student_id=student_id,
-                            subscription_type=subscription.subscription_type,
+                            subscription_id=subscription.id,
                             amount=session_cost,
-                            standard_price=standard_price,
                             payment_date=next_month,
-                            month=next_month.month,
-                            year=next_month.year,
+                            payment_month=next_month,
+                            payment_type=PaymentType.PARTIAL,
+                            status=PaymentStatus.PENDING,
                             notes=f"Автоматическая компенсация за перенос от {session_date.strftime('%d.%m.%Y')}"
                         )
                         db.add(payment)
@@ -281,12 +281,12 @@ async def mark_attendance(
                     # Create payment for next month
                     payment = Payment(
                         student_id=student_id,
-                        subscription_type=subscription.subscription_type,
+                        subscription_id=subscription.id,
                         amount=session_cost,
-                        standard_price=standard_price,
                         payment_date=next_month,
-                        month=next_month.month,
-                        year=next_month.year,
+                        payment_month=next_month,
+                        payment_type=PaymentType.PARTIAL,
+                        status=PaymentStatus.PENDING,
                         notes=f"Автоматическая компенсация за перенос от {session_date.strftime('%d.%m.%Y')}"
                     )
                     db.add(payment)
