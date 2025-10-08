@@ -557,9 +557,7 @@ async def get_group_attendance_detail(
     current_user: User = Depends(get_current_user)
 ):
     """Get detailed attendance calendar for a specific group."""
-    from datetime import date, timedelta
     from calendar import monthrange
-    from app.models.group import Group, ScheduleType
     
     # Verify group access
     await check_group_access(group_id, current_user, db)
@@ -582,14 +580,13 @@ async def get_group_attendance_detail(
     
     # Determine training days based on schedule_type
     training_days = []
-    if group.schedule_type == ScheduleType.MON_WED_FRI:
+    if group.schedule_type.value == 'mon_wed_fri':
         training_days = [0, 2, 4]  # Monday, Wednesday, Friday
-    elif group.schedule_type == ScheduleType.TUE_THU:
+    elif group.schedule_type.value == 'tue_thu':
         training_days = [1, 3]  # Tuesday, Thursday
-    elif group.schedule_type == ScheduleType.DAILY:
-        training_days = [0, 1, 2, 3, 4, 5, 6]  # Every day
-    elif group.schedule_type == ScheduleType.WEEKEND:
-        training_days = [5, 6]  # Saturday, Sunday
+    else:
+        # Default to all weekdays if unknown type
+        training_days = [0, 1, 2, 3, 4]
     
     # Get all training dates in the month
     _, last_day = monthrange(year, month)
