@@ -269,12 +269,26 @@ async def get_unpaid_students(
         payment = payment_check.scalars().first()
         
         if not payment:
+            # Get active subscription to determine expected amount
+            subscription_query = select(Subscription).where(
+                Subscription.student_id == student.id,
+                Subscription.is_active == True
+            ).order_by(Subscription.start_date.desc())
+            subscription_result = await db.execute(subscription_query)
+            active_subscription = subscription_result.scalars().first()
+            
+            # Calculate expected amount based on subscription
+            expected_amount = Decimal('0')
+            if active_subscription:
+                expected_amount = active_subscription.price
+            
             unpaid_students.append({
                 'student_id': str(student.id),
                 'full_name': student.full_name,
                 'group_name': group_name,
                 'phone': student.phone,
-                'email': student.email
+                'email': student.email,
+                'debt_amount': float(expected_amount)
             })
     
     return {

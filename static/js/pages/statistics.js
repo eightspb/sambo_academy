@@ -389,7 +389,7 @@ function renderUnpaidStudents(data) {
                             <th>ФИО</th>
                             <th>Группа</th>
                             <th>Телефон</th>
-                            <th>Email</th>
+                            <th>Сумма задолженности</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
@@ -400,7 +400,7 @@ function renderUnpaidStudents(data) {
                                 <td><strong>${student.full_name}</strong></td>
                                 <td>${student.group_name}</td>
                                 <td>${student.phone || '-'}</td>
-                                <td>${student.email || '-'}</td>
+                                <td><strong style="color: #dc2626;">${student.debt_amount ? student.debt_amount.toLocaleString('ru-RU') + ' ₽' : '-'}</strong></td>
                                 <td>
                                     ${student.phone ? `<a href="tel:${student.phone}" class="btn btn-sm btn-outline">📞 Позвонить</a>` : ''}
                                 </td>
@@ -431,12 +431,10 @@ function renderUnpaidStudents(data) {
                         <span class="mobile-card-value"><a href="tel:${student.phone}">${student.phone}</a></span>
                     </div>
                     ` : ''}
-                    ${student.email ? `
                     <div class="mobile-card-row">
-                        <span class="mobile-card-label">Email:</span>
-                        <span class="mobile-card-value">${student.email}</span>
+                        <span class="mobile-card-label">Задолженность:</span>
+                        <span class="mobile-card-value"><strong style="color: #dc2626;">${student.debt_amount ? student.debt_amount.toLocaleString('ru-RU') + ' ₽' : '-'}</strong></span>
                     </div>
-                    ` : ''}
                     ${student.phone ? `
                     <div class="mobile-card-actions">
                         <a href="tel:${student.phone}" class="btn btn-sm btn-outline">📞 Позвонить</a>
