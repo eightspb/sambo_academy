@@ -10,6 +10,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.payment import Payment, PaymentStatus
 from app.models.student import Student
+from app.models.subscription import Subscription
 from app.schemas.payment import (
     PaymentCreate,
     PaymentUpdate,
