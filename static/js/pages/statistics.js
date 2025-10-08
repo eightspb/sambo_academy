@@ -153,7 +153,7 @@ function renderAttendanceStats(stats) {
         </div>
         
         <!-- Desktop: Groups Stats Table -->
-        <div class="card" style="overflow-x: auto;">
+        <div class="card desktop-only" style="overflow-x: auto;">
             <h2 class="card-title mb-2">Статистика по группам</h2>
             ${stats.groups.length === 0 ? '<p class="text-secondary">Нет данных за выбранный месяц</p>' : `
                 <table class="table" id="groupsStatsTable">
@@ -201,9 +201,13 @@ function renderAttendanceStats(stats) {
             <h2 class="card-title mb-2" style="padding: 0 1rem;">Статистика по группам</h2>
             ${stats.groups.map(g => `
                 <div class="mobile-card">
-                    <div class="mobile-card-header">
-                        ${g.group_name}
-                        <span style="font-size: 1.2rem; color: var(--primary-color);">${g.attendance_rate}%</span>
+                    <div class="mobile-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                <span id="toggle-icon-mobile-${g.group_id}">▶</span> ${g.group_name}
+                            </div>
+                            <span style="font-size: 1.1rem; color: var(--primary-color);">${g.attendance_rate}%</span>
+                        </div>
                     </div>
                     <div class="mobile-card-row">
                         <span class="mobile-card-label">Всего отметок:</span>
@@ -221,6 +225,11 @@ function renderAttendanceStats(stats) {
                         <span class="mobile-card-label">Перенос:</span>
                         <span class="mobile-card-value"><span class="badge badge-warning">${g.transferred}</span></span>
                     </div>
+                    <button class="btn btn-outline" onclick="toggleGroupDetailMobile('${g.group_id}', '${g.group_name.replace(/'/g, "\\'")}')" 
+                            style="width: 100%; margin-top: 0.5rem;">
+                        Календарь посещаемости
+                    </button>
+                    <div id="detail-content-mobile-${g.group_id}" style="display: none; margin-top: 1rem;"></div>
                 </div>
             `).join('')}
         </div>
@@ -458,6 +467,40 @@ async function toggleGroupDetail(groupId, groupName) {
         
         // Load detail data if not loaded yet
         await loadGroupDetail(groupId, groupName);
+    }
+}
+
+async function toggleGroupDetailMobile(groupId, groupName) {
+    const contentDiv = document.getElementById(`detail-content-mobile-${groupId}`);
+    const toggleIcon = document.getElementById(`toggle-icon-mobile-${groupId}`);
+    
+    if (expandedGroups.has(`mobile-${groupId}`)) {
+        // Close detail
+        contentDiv.style.display = 'none';
+        toggleIcon.textContent = '▶';
+        expandedGroups.delete(`mobile-${groupId}`);
+    } else {
+        // Open detail
+        contentDiv.style.display = 'block';
+        toggleIcon.textContent = '▼';
+        expandedGroups.add(`mobile-${groupId}`);
+        
+        // Load detail data if not loaded yet
+        await loadGroupDetailMobile(groupId, groupName, contentDiv);
+    }
+}
+
+async function loadGroupDetailMobile(groupId, groupName, container) {
+    const year = document.getElementById('yearFilter').value;
+    const month = document.getElementById('monthFilter').value;
+    
+    container.innerHTML = '<div class="spinner"></div>';
+    
+    try {
+        const data = await api.get(`/attendance/statistics/group-detail/${groupId}?year=${year}&month=${month}`);
+        renderGroupDetail(container, data);
+    } catch (error) {
+        container.innerHTML = `<p class="text-danger">Ошибка загрузки: ${error.message}</p>`;
     }
 }
 
