@@ -419,7 +419,7 @@ function renderUnpaidStudents(data) {
                 <div class="mobile-card" style="border-left: 3px solid #dc2626;">
                     <div class="mobile-card-header">
                         ${index + 1}. ${student.full_name}
-                        <span class="badge badge-danger">Не оплатил</span>
+                        <span class="badge badge-danger">Не оплатил ${student.debt_amount ? student.debt_amount.toLocaleString('ru-RU') + ' ₽' : '-'}</span>
                     </div>
                     <div class="mobile-card-row">
                         <span class="mobile-card-label">Группа:</span>
@@ -431,10 +431,6 @@ function renderUnpaidStudents(data) {
                         <span class="mobile-card-value"><a href="tel:${student.phone}">${student.phone}</a></span>
                     </div>
                     ` : ''}
-                    <div class="mobile-card-row">
-                        <span class="mobile-card-label">Задолженность:</span>
-                        <span class="mobile-card-value"><strong style="color: #dc2626;">${student.debt_amount ? student.debt_amount.toLocaleString('ru-RU') + ' ₽' : '-'}</strong></span>
-                    </div>
                     ${student.phone ? `
                     <div class="mobile-card-actions">
                         <a href="tel:${student.phone}" class="btn btn-sm btn-outline">📞 Позвонить</a>
