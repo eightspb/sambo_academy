@@ -8,6 +8,7 @@ const monthNames = [
 ];
 
 let currentTab = 'attendance';
+let expandedGroups = new Set(); // Track which groups are expanded
 
 async function loadData() {
     await auth.checkAuth();
@@ -155,7 +156,7 @@ function renderAttendanceStats(stats) {
         <div class="card" style="overflow-x: auto;">
             <h2 class="card-title mb-2">Статистика по группам</h2>
             ${stats.groups.length === 0 ? '<p class="text-secondary">Нет данных за выбранный месяц</p>' : `
-                <table class="table">
+                <table class="table" id="groupsStatsTable">
                     <thead>
                         <tr>
                             <th>Группа</th>
@@ -169,12 +170,24 @@ function renderAttendanceStats(stats) {
                     <tbody>
                         ${stats.groups.map(g => `
                             <tr>
-                                <td><strong>${g.group_name}</strong></td>
+                                <td>
+                                    <button class="btn btn-link" onclick="toggleGroupDetail('${g.group_id}', '${g.group_name.replace(/'/g, "\\'")}')"
+                                            style="text-decoration: none; font-weight: bold; color: var(--primary-color); padding: 0;">
+                                        <span id="toggle-icon-${g.group_id}">▶</span> ${g.group_name}
+                                    </button>
+                                </td>
                                 <td>${g.total_sessions}</td>
                                 <td><span class="badge badge-success">${g.present}</span></td>
                                 <td><span class="badge badge-danger">${g.absent}</span></td>
                                 <td><span class="badge badge-warning">${g.transferred}</span></td>
                                 <td><strong>${g.attendance_rate}%</strong></td>
+                            </tr>
+                            <tr id="detail-row-${g.group_id}" style="display: none;">
+                                <td colspan="6" style="padding: 0; background: #f8f9fa;">
+                                    <div id="detail-content-${g.group_id}" style="padding: 1rem;">
+                                        <div class="spinner"></div>
+                                    </div>
+                                </td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -424,6 +437,100 @@ function renderUnpaidStudents(data) {
             `).join('')}
         </div>
         ` : ''}
+    `;
+}
+
+
+async function toggleGroupDetail(groupId, groupName) {
+    const detailRow = document.getElementById(`detail-row-${groupId}`);
+    const toggleIcon = document.getElementById(`toggle-icon-${groupId}`);
+    
+    if (expandedGroups.has(groupId)) {
+        // Close detail
+        detailRow.style.display = 'none';
+        toggleIcon.textContent = '▶';
+        expandedGroups.delete(groupId);
+    } else {
+        // Open detail
+        detailRow.style.display = 'table-row';
+        toggleIcon.textContent = '▼';
+        expandedGroups.add(groupId);
+        
+        // Load detail data if not loaded yet
+        await loadGroupDetail(groupId, groupName);
+    }
+}
+
+async function loadGroupDetail(groupId, groupName) {
+    const contentDiv = document.getElementById(`detail-content-${groupId}`);
+    const year = document.getElementById('yearFilter').value;
+    const month = document.getElementById('monthFilter').value;
+    
+    try {
+        const data = await api.get(`/attendance/statistics/group-detail/${groupId}?year=${year}&month=${month}`);
+        renderGroupDetail(contentDiv, data);
+    } catch (error) {
+        contentDiv.innerHTML = `<p class="text-danger">Ошибка загрузки: ${error.message}</p>`;
+    }
+}
+
+function renderGroupDetail(container, data) {
+    if (data.students.length === 0) {
+        container.innerHTML = '<p class="text-secondary">В группе нет учеников</p>';
+        return;
+    }
+    
+    // Get unique training days from first student's attendance
+    const trainingDays = data.students[0]?.attendance || [];
+    
+    container.innerHTML = `
+        <h3 style="margin-bottom: 1rem;">${data.group_name} - Календарь посещаемости</h3>
+        <div style="overflow-x: auto;">
+            <table class="table" style="font-size: 0.9rem;">
+                <thead>
+                    <tr>
+                        <th style="position: sticky; left: 0; background: white; z-index: 10; min-width: 150px;">Ученик</th>
+                        ${trainingDays.map(d => `
+                            <th style="text-align: center; padding: 0.5rem; min-width: 40px;">${d.day}</th>
+                        `).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.students.map(student => `
+                        <tr>
+                            <td style="position: sticky; left: 0; background: white; z-index: 10; font-weight: 500;">${student.full_name}</td>
+                            ${student.attendance.map(att => {
+                                let bgColor = '#fff';
+                                let title = 'Нет данных';
+                                
+                                if (att.status === 'present') {
+                                    bgColor = '#d1fae5'; // Light green
+                                    title = 'Присутствовал';
+                                } else if (att.status === 'absent') {
+                                    bgColor = '#fee2e2'; // Light red
+                                    title = 'Отсутствовал';
+                                } else if (att.status === 'transferred') {
+                                    bgColor = '#fef3c7'; // Light yellow
+                                    title = 'Перенос';
+                                }
+                                
+                                return `
+                                    <td style="background: ${bgColor}; text-align: center; padding: 0.5rem;" title="${title}">
+                                        ${att.status === 'present' ? '✓' : att.status === 'absent' ? '✗' : att.status === 'transferred' ? '↻' : ''}
+                                    </td>
+                                `;
+                            }).join('')}
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.9rem;">
+            <div><span style="display: inline-block; width: 20px; height: 20px; background: #d1fae5; border: 1px solid #ccc; vertical-align: middle;"></span> Присутствовал</div>
+            <div><span style="display: inline-block; width: 20px; height: 20px; background: #fee2e2; border: 1px solid #ccc; vertical-align: middle;"></span> Отсутствовал</div>
+            <div><span style="display: inline-block; width: 20px; height: 20px; background: #fef3c7; border: 1px solid #ccc; vertical-align: middle;"></span> Перенос</div>
+            <div><span style="display: inline-block; width: 20px; height: 20px; background: #fff; border: 1px solid #ccc; vertical-align: middle;"></span> Нет данных</div>
+        </div>
     `;
 }
 

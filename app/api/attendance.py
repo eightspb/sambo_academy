@@ -546,3 +546,116 @@ async def get_attendance_statistics(
             'attendance_rate': round(overall_rate, 2)
         }
     }
+
+
+@router.get("/statistics/group-detail/{group_id}")
+async def get_group_attendance_detail(
+    group_id: uuid.UUID,
+    year: int = None,
+    month: int = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get detailed attendance calendar for a specific group."""
+    from datetime import date, timedelta
+    from calendar import monthrange
+    from app.models.group import Group, ScheduleType
+    
+    # Verify group access
+    await check_group_access(group_id, current_user, db)
+    
+    # Use current year/month if not specified
+    if year is None:
+        year = date.today().year
+    if month is None:
+        month = date.today().month
+    
+    # Get group info
+    group_result = await db.execute(select(Group).where(Group.id == group_id))
+    group = group_result.scalar_one_or_none()
+    
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Group not found"
+        )
+    
+    # Determine training days based on schedule_type
+    training_days = []
+    if group.schedule_type == ScheduleType.MON_WED_FRI:
+        training_days = [0, 2, 4]  # Monday, Wednesday, Friday
+    elif group.schedule_type == ScheduleType.TUE_THU:
+        training_days = [1, 3]  # Tuesday, Thursday
+    elif group.schedule_type == ScheduleType.DAILY:
+        training_days = [0, 1, 2, 3, 4, 5, 6]  # Every day
+    elif group.schedule_type == ScheduleType.WEEKEND:
+        training_days = [5, 6]  # Saturday, Sunday
+    
+    # Get all training dates in the month
+    _, last_day = monthrange(year, month)
+    training_dates = []
+    
+    for day in range(1, last_day + 1):
+        current_date = date(year, month, day)
+        if current_date.weekday() in training_days:
+            training_dates.append(current_date)
+    
+    # Get all active students in the group
+    students_result = await db.execute(
+        select(Student).where(
+            and_(
+                or_(
+                    Student.group_id == group_id,
+                    group_id == any_(Student.additional_group_ids)
+                ),
+                Student.is_active == True
+            )
+        ).order_by(Student.full_name)
+    )
+    students = students_result.scalars().all()
+    
+    # Get all attendance records for this group and month
+    attendances_result = await db.execute(
+        select(Attendance).where(
+            and_(
+                Attendance.group_id == group_id,
+                func.extract('year', Attendance.session_date) == year,
+                func.extract('month', Attendance.session_date) == month
+            )
+        )
+    )
+    attendances = attendances_result.scalars().all()
+    
+    # Build attendance map: student_id -> {date -> status}
+    attendance_map = {}
+    for att in attendances:
+        if att.student_id not in attendance_map:
+            attendance_map[att.student_id] = {}
+        attendance_map[att.student_id][att.session_date] = att.status.value
+    
+    # Build response
+    students_data = []
+    for student in students:
+        student_attendance = []
+        for training_date in training_dates:
+            status = attendance_map.get(student.id, {}).get(training_date, None)
+            student_attendance.append({
+                'date': training_date.isoformat(),
+                'day': training_date.day,
+                'status': status  # 'present', 'absent', 'transferred', or None
+            })
+        
+        students_data.append({
+            'student_id': str(student.id),
+            'full_name': student.full_name,
+            'attendance': student_attendance
+        })
+    
+    return {
+        'group_id': str(group.id),
+        'group_name': group.name,
+        'year': year,
+        'month': month,
+        'training_dates': [d.isoformat() for d in training_dates],
+        'students': students_data
+    }
