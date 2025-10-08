@@ -53,7 +53,13 @@ async def mark_attendance(
     result_attendances = []
     
     for attendance_item in attendance_data.attendances:
-        student_id = uuid.UUID(attendance_item["student_id"])
+        try:
+            student_id_str = str(attendance_item["student_id"])
+            student_id = uuid.UUID(student_id_str)
+        except (ValueError, KeyError) as e:
+            print(f"ERROR parsing student_id: {attendance_item.get('student_id')}, error: {e}")
+            continue
+            
         status_value = attendance_item.get("status")  # Может быть None
         notes = attendance_item.get("notes")
         
@@ -92,7 +98,11 @@ async def mark_attendance(
             continue
         
         # Конвертируем в AttendanceStatus
-        status_value = AttendanceStatus(status_value)
+        try:
+            status_value = AttendanceStatus(status_value)
+        except ValueError as e:
+            print(f"ERROR: Invalid status value '{status_value}' for student {student_id}: {e}")
+            continue
         
         if existing_attendance:
             # Update existing record

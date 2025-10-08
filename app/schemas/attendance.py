@@ -28,6 +28,12 @@ class AttendanceMarkRequest(BaseModel):
         ..., 
         description="List of {'student_id': UUID, 'status': AttendanceStatus, 'notes': Optional[str]}"
     )
+    
+    class Config:
+        # Allow string dates to be parsed
+        json_encoders = {
+            date: lambda v: v.isoformat() if v else None
+        }
 
 
 class AttendanceUpdate(BaseModel):
