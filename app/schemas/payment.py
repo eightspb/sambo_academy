@@ -25,7 +25,7 @@ class PaymentCreate(PaymentBase):
 
 class PaymentUpdate(BaseModel):
     """Schema for payment update."""
-    amount: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    amount: Optional[Decimal] = Field(None, ge=0)
     payment_date: Optional[date] = None
     payment_month: Optional[date] = None
     payment_type: Optional[PaymentType] = None

@@ -61,8 +61,15 @@ const api = {
             }
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Request failed');
+                // Try to parse JSON error, fallback to text if it fails
+                try {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Request failed');
+                } catch (parseError) {
+                    // If JSON parsing fails, get text response
+                    const text = await response.text();
+                    throw new Error(text || `Request failed with status ${response.status}`);
+                }
             }
             
             // Handle 204 No Content
