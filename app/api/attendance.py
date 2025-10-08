@@ -163,8 +163,8 @@ async def mark_attendance(
                         existing_payment_result = await db.execute(
                             select(func.sum(Payment.amount)).where(
                                 Payment.student_id == student_id,
-                                Payment.month == current_month,
-                                Payment.year == current_year
+                                func.extract('month', Payment.payment_month) == current_month,
+                                func.extract('year', Payment.payment_month) == current_year
                             )
                         )
                         actual_paid_amount = existing_payment_result.scalar()
@@ -263,8 +263,8 @@ async def mark_attendance(
                     existing_payment_result = await db.execute(
                         select(func.sum(Payment.amount)).where(
                             Payment.student_id == student_id,
-                            Payment.month == current_month,
-                            Payment.year == current_year
+                            func.extract('month', Payment.payment_month) == current_month,
+                            func.extract('year', Payment.payment_month) == current_year
                         )
                     )
                     actual_paid_amount = existing_payment_result.scalar()
