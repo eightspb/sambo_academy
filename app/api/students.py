@@ -83,7 +83,7 @@ async def get_students(
     result = await db.execute(query)
     students = result.scalars().all()
     
-    # Добавляем subscription_type для каждого студента из активного абонемента
+    # Добавляем subscription_type и group_name для каждого студента
     students_list = []
     for student in students:
         # Получаем активный абонемент (самый свежий)
@@ -94,10 +94,17 @@ async def get_students(
         sub_result = await db.execute(sub_query)
         active_sub = sub_result.scalars().first()
         
+        # Получаем название группы
+        group_query = select(Group).where(Group.id == student.group_id)
+        group_result = await db.execute(group_query)
+        group = group_result.scalar_one_or_none()
+        
         # Создаем response объект
         student_response = StudentResponse.model_validate(student)
         if active_sub:
             student_response.subscription_type = active_sub.subscription_type.value
+        if group:
+            student_response.group_name = group.name
         
         students_list.append(student_response)
     

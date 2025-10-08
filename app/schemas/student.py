@@ -70,6 +70,7 @@ class StudentResponse(StudentBase):
     """Schema for student response."""
     id: uuid.UUID
     group_id: uuid.UUID
+    group_name: Optional[str] = None
     additional_group_ids: Optional[List[uuid.UUID]] = Field(default_factory=list)
     trainer_id: uuid.UUID
     registration_date: date
